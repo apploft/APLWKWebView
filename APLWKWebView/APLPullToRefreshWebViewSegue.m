@@ -7,13 +7,13 @@
 //
 
 #import "APLPullToRefreshWebViewSegue.h"
-#import "APLPullToRefreshWKWebView.h"
+#import "APLWKWebViewController.h"
 
 @implementation APLPullToRefreshWebViewSegue
 
 - (void)perform {
-    APLPullToRefreshWKWebView *source = self.sourceViewController;
-    APLPullToRefreshWKWebView *destination = self.destinationViewController;
+    APLWKWebViewController *source = self.sourceViewController;
+    APLWKWebViewController *destination = self.destinationViewController;
     UINavigationController *navigationController = source.navigationController;
     UIView *snapshot = [source.webView snapshotViewAfterScreenUpdates:NO];
     
@@ -23,7 +23,7 @@
     
     [navigationController pushViewController:destination animated:NO];
     
-    __weak APLPullToRefreshWKWebView *weakDestination = destination;
+    __weak APLWKWebViewController *weakDestination = destination;
     [destination addLoadThresholdReachedHandlerForNextLoad:^{
         weakDestination.webView.alpha = 1;
         [snapshot removeFromSuperview];

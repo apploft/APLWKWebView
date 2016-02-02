@@ -38,6 +38,7 @@
     self.webView = [self.contentViewController installWebViewDelegate:self];
     [self.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
     self.delegate = self;
+    self.contentView = childRootView;
     
     [self setupLoadingIndicator];
     
@@ -123,7 +124,11 @@
 
 - (void)aplDidTriggerPullToRefreshCompletion:(APLPullToRefreshCompletionHandler)completionHandler {
     self.pendingPullToRefreshCompletionHandler = completionHandler;
-    [self didTriggerPullToRefresh];
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidTriggerPullToRefresh:)]) {
+        [self.aplWebViewDelegate aplWebViewDidTriggerPullToRefresh:self];
+    } else {
+        [self.webView reload];
+    }
 }
 
 - (UIView<APLPullToRefreshView> *)aplPullToRefreshPullToRefreshView {
@@ -141,16 +146,11 @@
     }
     
     _pendingPullToRefreshCompletionHandler();
-    [self didFinishPullToRefresh];
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidFinishPullToRefresh:)]) {
+        [self.aplWebViewDelegate aplWebViewDidFinishPullToRefresh:self];
+    }
 }
 
-- (void)didTriggerPullToRefresh {
-    [self.webView reload];
-}
-
-- (void)didFinishPullToRefresh {
-    
-}
 
 #pragma mark - Lazy Initializers
 
@@ -170,49 +170,97 @@
     return _pendingLoadThresholdReachedCompletionHandlers;
 }
 
+#pragma mark - WKNavigationDelegate and Forwardings
+
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    if (navigationAction.navigationType == WKNavigationTypeLinkActivated) {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:)] && navigationAction.navigationType == WKNavigationTypeLinkActivated) {
         decisionHandler(WKNavigationActionPolicyCancel);
         [self pushNavigationAction:navigationAction];
+    } else if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandler];
+    } else {
+        decisionHandler(WKNavigationActionPolicyAllow);
     }
-    
-    decisionHandler(WKNavigationActionPolicyAllow);
 }
 
 - (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
+    [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
     self.progressView.hidden = NO;
+    
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didCommitNavigation:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didCommitNavigation:navigation];
+    }
 }
 
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
+    [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
     self.progressView.hidden = YES;
-    NSLog(@"Error: %@", error);
+
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailNavigation:withError:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didFailNavigation:navigation withError:error];
+    }
 }
 
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     [self finishPullToRefresh];
+    [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
     self.progressView.hidden = YES;
+    
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFinishNavigation:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didFinishNavigation:navigation];
+    }
 }
 
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
+    [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
     self.progressView.hidden = YES;
     
-    NSLog(@"Provisional error: %@", error);
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailProvisionalNavigation:withError:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didFailProvisionalNavigation:navigation withError:error];
+    }
 }
+
+- (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didReceiveAuthenticationChallenge:completionHandler:)]) {
+        [self.aplWebViewDelegate aplWebViewController:webView didReceiveAuthenticationChallenge:challenge completionHandler:completionHandler];
+    } else {
+        completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
+    }
+}
+
+- (void)webView:(WKWebView *)webView didReceiveServerRedirectForProvisionalNavigation:(WKNavigation *)navigation {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didReceiveServerRedirectForProvisionalNavigation:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didReceiveServerRedirectForProvisionalNavigation:navigation];
+    }
+}
+
+- (void)webView:(WKWebView *)webView didStartProvisionalNavigation:(WKNavigation *)navigation {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didStartProvisionalNavigation:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self didStartProvisionalNavigation:navigation];
+    }
+}
+
+- (void)webView:(WKWebView *)webView decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationResponse:decisionHandler:)]) {
+        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationResponse:navigationResponse decisionHandler:decisionHandler];
+    } else {
+        decisionHandler(WKNavigationResponsePolicyAllow);
+    }
+}
+
 
 #pragma mark - Web View Push
 
 - (void)pushNavigationAction:(WKNavigationAction *)action {
-    APLWKWebViewController *freshWebView = [self freshWebViewControllerForPush];
+    // This method is only called if our delegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:).
+    // Hence this call is safe:
+    APLWKWebViewController *freshWebView = [self.aplWebViewDelegate aplWebViewControllerFreshInstanceForPush:self];
+    
     APLPullToRefreshWebViewSegue *segue = [[APLPullToRefreshWebViewSegue alloc] initWithIdentifier:@"APLPullToRefreshWKWebViewSegue" source:self destination:freshWebView];
     [freshWebView loadRequest:action.request];
     [segue perform];
-}
-
-- (APLWKWebViewController *)freshWebViewControllerForPush {
-    NSAssert(NO, @"-[APLPullToRefreshWKWebView freshWebViewControllerForPush] must be implemented in your concrete subclass.");
-    return nil;
 }
 
 @end

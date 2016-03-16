@@ -15,8 +15,8 @@
 @protocol APLWKWebViewDelegate <NSObject>
 
 @optional
-
-- (APLWKWebViewController *)aplWebViewControllerFreshInstanceForPush:(APLWKWebViewController *)webViewController; // disables push if none provided
+- (APLWKWebViewController *)aplWebViewControllerFreshInstanceForPush:(APLWKWebViewController *)webViewController; // disables push and enables WKWebView's navigation gestures if none provided
+- (void)aplWebViewController:(APLWKWebViewController *)webViewController toolbarShouldHide:(BOOL)hideToolbar;
 - (void)aplWebViewDidTriggerPullToRefresh:(APLWKWebViewController *)webViewController;
 - (void)aplWebViewDidFinishPullToRefresh:(APLWKWebViewController *)webViewController;
 - (void)aplWebViewController:(APLWKWebViewController *)webViewController didCommitNavigation:(WKNavigation *)navigation;
@@ -42,7 +42,14 @@
 @property (nonatomic) CGFloat loadThreshold;
 @property (nonatomic) UIProgressView *progressView;
 @property (nonatomic, weak) id<APLWKWebViewDelegate> aplWebViewDelegate;
+@property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
 
+
+@property (nonatomic) UIBarButtonItem *backButtonItem;
+@property (nonatomic) UIBarButtonItem *forwardButtonItem;
+
+#pragma mark - View Controller Appearence
+- (void)updateNavigationItemTitle:(NSString *)newTitle;
 
 #pragma mark - Pull To Refresh handling
 - (void)loadRequest:(NSURLRequest *)request;
@@ -51,4 +58,8 @@
 
 #pragma mark - Push Handling
 - (void)pushNavigationAction:(WKNavigationAction *)action;
+
+#pragma mark - Navigation Tool Bar
+- (NSArray *)suggestedToolbarItemsForNormalTintColor:(UIColor *)color disabledTintColor:(UIColor *)disabledColor;
+
 @end

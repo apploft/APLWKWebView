@@ -10,7 +10,9 @@
 #import "APLWKContentViewController.h"
 #import "APLPullToRefreshWebViewSegue.h"
 
-@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate>
+static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
+
+@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate>
 
 @property (nonatomic) APLWKContentViewController *contentViewController;
 @property (nonatomic, strong) APLPullToRefreshCompletionHandler pendingPullToRefreshCompletionHandler;
@@ -18,6 +20,12 @@
 
 // Needed before viewDidLoad
 @property (nonatomic) NSURLRequest *pendingLoadRequest;
+
+// Needed for bottom bar
+@property (nonatomic) CGFloat lastYPosition;
+@property (nonatomic) UIColor *bottomEnabledColor;
+@property (nonatomic) UIColor *bottomDisabledColor;
+
 
 @end
 
@@ -35,12 +43,16 @@
     [parentView addSubview:childRootView];
     
     [self.contentViewController didMoveToParentViewController:self];
-    self.webView = [self.contentViewController installWebViewDelegate:self];
-    [self.webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:NULL];
+    WKWebView *webView = [self.contentViewController installWebViewDelegate:self];
+    self.webView = webView;
+    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
     self.delegate = self;
     self.contentView = childRootView;
     
     [self setupLoadingIndicator];
+    [self configureWebViewFromDelegate:self.delegate];
     
     if (self.pendingLoadRequest) {
         [self.webView loadRequest:self.pendingLoadRequest];
@@ -49,7 +61,13 @@
 }
 
 - (void)dealloc {
-    [self.webView removeObserver:self forKeyPath:@"estimatedProgress"];
+    WKWebView *webView = self.webView;
+    [webView removeObserver:self forKeyPath:@"estimatedProgress" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"title" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"loading" context:kAPLWKWebViewKVOContext];
+    if (webView.scrollView.delegate == self) {
+        webView.scrollView.delegate = nil;
+    }
 }
 
 #pragma mark - Load Threshold
@@ -79,17 +97,38 @@
     }
 }
 
+- (void)updateNavigationItemTitle:(NSString *)newTitle {
+    self.navigationItem.title = newTitle;
+}
+
 #pragma mark - KVO: Loading Progress
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
-    if ([keyPath isEqualToString:@"estimatedProgress"] && object == _webView) {
+    /*
+     * Direct ivar access intended because no lazy initializers
+     * should be fired.
+     */
+    
+    if (context != kAPLWKWebViewKVOContext) {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+        return;
+    } else if (object != _webView) {
+        return;
+    }
+    
+    if ([keyPath isEqualToString:@"estimatedProgress"]) {
         _progressView.progress = _webView.estimatedProgress;
         
         if (_webView.estimatedProgress > _loadThreshold) {
             [self loadThresholdReached];
         }
-    } else {
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+    } else if ([keyPath isEqualToString:@"title"]) {
+        if (_useContentPageTitle) {
+            [self updateNavigationItemTitle:change[NSKeyValueChangeNewKey]];
+        }
+    } else if ([keyPath isEqualToString:@"loading"]) {
+        _progressView.hidden = ![change[NSKeyValueChangeNewKey] boolValue];
+        [self updateBottomItems];
     }
 }
 
@@ -132,7 +171,6 @@
 }
 
 - (UIView<APLPullToRefreshView> *)aplPullToRefreshPullToRefreshView {
-    NSAssert(nil, @"-[APLPullToRefreshWKWebView aplPullToRefreshPullToRefreshView] must be implemented in your concrete subclass.");
     return nil;
 }
 
@@ -149,6 +187,108 @@
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidFinishPullToRefresh:)]) {
         [self.aplWebViewDelegate aplWebViewDidFinishPullToRefresh:self];
     }
+}
+
+#pragma mark - Bottom Navigation Bar
+
+- (void)configureBottomBarScrollingDelegateForWebView:(WKWebView *)webView {
+    if ([self.delegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
+        webView.scrollView.delegate = self;
+    } else {
+        if (webView.scrollView.delegate == self) {
+            webView.scrollView.delegate = nil;
+        }
+    }
+}
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView {
+    _lastYPosition = scrollView.contentOffset.y;
+}
+
+- (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
+    BOOL shouldHideToolbar = scrollView.contentOffset.y > _lastYPosition;
+    
+    id<APLWKWebViewDelegate>delegate = self.delegate;
+    if ([delegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
+        [delegate aplWebViewController:self toolbarShouldHide:shouldHideToolbar];
+    }
+}
+
+- (NSArray *)suggestedToolbarItemsForNormalTintColor:(UIColor *)tintColor disabledTintColor:(UIColor *)disabledColor {
+    UIBarButtonItem *backButtonItem = self.backButtonItem;
+    UIBarButtonItem *forwardButtonItem = self.forwardButtonItem;
+    UIBarButtonItem *spacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+    spacer.width = 32;
+    UIBarButtonItem *refreshItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self.webView action:@selector(reload)];
+    self.bottomEnabledColor = tintColor;
+    self.bottomDisabledColor = disabledColor;
+    
+    if (tintColor) {
+        refreshItem.tintColor = tintColor;
+    }
+    
+    [self updateBottomItems];
+    
+    NSArray *suggestedItems = @[
+                                backButtonItem,
+                                spacer,
+                                forwardButtonItem,
+                                spacer,
+                                refreshItem,
+                                [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil],
+                                ];
+    return suggestedItems;
+}
+
+- (void)setEnabled:(BOOL)enabled andColorForBarButtonItem:(UIBarButtonItem *)item {
+    item.enabled = enabled;
+    [item setTitleTextAttributes:@{ NSForegroundColorAttributeName: enabled ? self.bottomEnabledColor : self.bottomDisabledColor} forState:UIControlStateNormal];
+}
+
+- (void)updateBottomItems {
+    if (_backButtonItem || _forwardButtonItem) {
+        [self setEnabled:_webView.canGoBack andColorForBarButtonItem:_backButtonItem];
+        [self setEnabled:_webView.canGoForward andColorForBarButtonItem:_forwardButtonItem];
+    }
+}
+
+- (UIBarButtonItem *)backButtonItem {
+    if (!_backButtonItem) {
+        _backButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"<" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goBack)];
+    }
+    
+    return _backButtonItem;
+}
+
+- (UIBarButtonItem *)forwardButtonItem {
+    if (!_forwardButtonItem) {
+        _forwardButtonItem = [[UIBarButtonItem alloc] initWithTitle:@">" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goForward)];
+    }
+    
+    return _forwardButtonItem;
+}
+
+#pragma mark - WebView setup from Delegate
+
+- (void)configureWebViewFromDelegate:(id<APLWKWebViewDelegate>)delegate {
+    if (!_webView) {
+        /*
+         * The delegate is set although the web view has not been initialized,
+         * yet. -viewDidLoad will call us again.
+         */
+        return;
+    }
+    
+    WKWebView *webView = self.webView;
+    BOOL shouldEnableNavigationGestures = ![delegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:)];
+    webView.allowsBackForwardNavigationGestures = shouldEnableNavigationGestures;
+    [self configureBottomBarScrollingDelegateForWebView:webView];
+}
+
+- (void)setAplWebViewDelegate:(id<APLWKWebViewDelegate>)aplWebViewDelegate {
+    _aplWebViewDelegate = aplWebViewDelegate;
+    
+    [self configureWebViewFromDelegate:aplWebViewDelegate];
 }
 
 
@@ -185,7 +325,6 @@
 
 - (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
-    self.progressView.hidden = NO;
     
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didCommitNavigation:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didCommitNavigation:navigation];
@@ -195,8 +334,7 @@
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    self.progressView.hidden = YES;
-
+    
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailNavigation:withError:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFailNavigation:navigation withError:error];
     }
@@ -205,7 +343,6 @@
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    self.progressView.hidden = YES;
     
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFinishNavigation:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFinishNavigation:navigation];
@@ -215,7 +352,6 @@
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    self.progressView.hidden = YES;
     
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailProvisionalNavigation:withError:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFailProvisionalNavigation:navigation withError:error];
@@ -249,7 +385,6 @@
         decisionHandler(WKNavigationResponsePolicyAllow);
     }
 }
-
 
 #pragma mark - Web View Push
 

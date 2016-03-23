@@ -124,10 +124,18 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         }
     } else if ([keyPath isEqualToString:@"title"]) {
         if (_useContentPageTitle) {
-            [self updateNavigationItemTitle:change[NSKeyValueChangeNewKey]];
+            NSString *title = change[NSKeyValueChangeNewKey];
+            [self updateNavigationItemTitle:title];
+            if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangePageTitle:)]) {
+                [_aplWebViewDelegate aplWebViewController:self didChangePageTitle:title];
+            }
         }
     } else if ([keyPath isEqualToString:@"loading"]) {
-        _progressView.hidden = ![change[NSKeyValueChangeNewKey] boolValue];
+        BOOL loading = [change[NSKeyValueChangeNewKey] boolValue];
+        _progressView.hidden = !loading;
+        if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
+            [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:loading];
+        }
         [self updateBottomItems];
     }
 }

@@ -1,8 +1,8 @@
 //
 //  APLPullToRefreshWebViewSegue.h
-//  Stiftunglife
+//  APLWKWebView
 //
-//  Created by Arbeit on 21.01.16.
+//  Created by Nico Schümann on 21.01.16.
 //  Copyright © 2016 apploft. All rights reserved.
 //
 

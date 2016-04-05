@@ -140,6 +140,7 @@
 @property (nonatomic) UIProgressView *progressView;
 @property (nonatomic, weak) id<APLWKWebViewDelegate> aplWebViewDelegate;
 @property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
+@property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
 
 
 @property (nonatomic) UIBarButtonItem *backButtonItem;

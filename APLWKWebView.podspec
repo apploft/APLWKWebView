@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "APLWKWebView"
-  s.version      = "0.0.3"
+  s.version      = "0.0.4"
   s.summary      = "APLWKWebViewController contains a WKWebView, a Pull to Refresh control and a loading indicator"
 
   s.description  = <<-DESC

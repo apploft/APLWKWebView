@@ -16,12 +16,12 @@
 @implementation SampleWebViewController
 
 - (void)viewDidLoad {
-    [super viewDidLoad];
-    
     /*
      * Basic APLWKWebViewController setup.
      */
     self.aplWebViewDelegate = self;
+
+    [super viewDidLoad];
     self.useContentPageTitle = YES;
     self.toolbarItems = [self suggestedToolbarItemsForNormalTintColor:[UIColor blueColor] disabledTintColor:[UIColor grayColor]];
     

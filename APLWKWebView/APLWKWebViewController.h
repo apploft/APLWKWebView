@@ -124,6 +124,20 @@
  */
 - (void)aplWebViewController:(APLWKWebViewController *)webViewController didChangePageTitle:(NSString *)pageTitle;
 
+/**
+  If you want to customise the `WKWebView`'s `configuration`, implement this method.
+ 
+  Subclassing notes: If you want to subclass `APLWKWebViewController`, make sure to set the
+  `aplWebViewDelegate` BEFORE calling [super viewDidLoad]. Else this method will not be
+  called.
+ 
+ @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
+ 
+ @param containingViewController the `UIViewController` instance the `WKWebView` is about to be installed
+ */
+- (WKWebViewConfiguration *)aplWebViewController:(APLWKWebViewController *)webViewController
+         configurationForWebViewInViewController:(UIViewController *)containingViewController;
+
 @end
 
 /**

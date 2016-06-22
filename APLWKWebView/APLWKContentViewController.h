@@ -7,6 +7,8 @@
 //
 
 #import <UIKit/UIKit.h>
+@class APLWKWebView;
+
 @import WebKit;
 
 /**
@@ -35,5 +37,7 @@
  @return The `WKWebView` this view controller manages
  */
 - (WKWebView *)installWebViewDelegate:(id<WKNavigationDelegate, WKUIDelegate>)webViewDelegate;
+
+- (instancetype)initWithAPLWKWebView:(APLWKWebView *)webView;
 
 @end

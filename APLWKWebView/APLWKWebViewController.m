@@ -33,6 +33,8 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 @implementation APLWKWebViewController
 
 - (void)viewDidLoad {
+    self.delegate = self;
+
     [super viewDidLoad];
     self.loadThreshold = 0.9;
     
@@ -52,7 +54,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
     [webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
     
-    self.delegate = self;
     self.contentView = childRootView;
     
     [self setupLoadingIndicator];
@@ -345,7 +346,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (APLWKContentViewController *)contentViewController {
     if (!_contentViewController) {
-        _contentViewController = [APLWKContentViewController new];
+        _contentViewController = [[APLWKContentViewController alloc] initWithAPLWKWebView:self];
     }
     
     return _contentViewController;

@@ -1,0 +1,15 @@
+PODS:
+  - APLPullToRefreshContainer (0.0.3)
+  - APLWKWebView (0.0.6):
+    - APLPullToRefreshContainer (~> 0.0.2)
+
+DEPENDENCIES:
+  - APLWKWebView
+
+SPEC CHECKSUMS:
+  APLPullToRefreshContainer: 2f573316219b1e99eb9294967566935687ce2dcd
+  APLWKWebView: 129ce636322d49613287819cbdf4f7c881fe731a
+
+PODFILE CHECKSUM: e5fb14e0b2e59ef77532e88633f8b6c19be2aab9
+
+COCOAPODS: 1.3.1

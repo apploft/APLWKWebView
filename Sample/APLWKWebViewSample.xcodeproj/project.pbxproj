@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		626F73FE6A08D7501C4E6426 /* libPods-APLWKWebViewSample.a in Frameworks */ = {isa = PBXBuildFile; fileRef = EC440D1FD82A353867474BA3 /* libPods-APLWKWebViewSample.a */; };
 		82705A5A1CB40D1D00D73149 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 82705A591CB40D1D00D73149 /* main.m */; };
 		82705A5D1CB40D1D00D73149 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 82705A5C1CB40D1D00D73149 /* AppDelegate.m */; };
 		82705A631CB40D1D00D73149 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 82705A611CB40D1D00D73149 /* Main.storyboard */; };
@@ -15,10 +16,10 @@
 		82705A731CB40D6A00D73149 /* SampleWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 82705A721CB40D6A00D73149 /* SampleWebViewController.m */; };
 		82705A7F1CB410F500D73149 /* RefreshView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 82705A7E1CB410F500D73149 /* RefreshView.xib */; };
 		82705A821CB4111C00D73149 /* RefreshView.m in Sources */ = {isa = PBXBuildFile; fileRef = 82705A811CB4111C00D73149 /* RefreshView.m */; };
-		BF5B7DAB3A4C7DEBFA6E4F7D /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BDAB0E39E6D0549E017EA7C4 /* libPods.a */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		336448ADD349B9BB0A264FDA /* Pods-APLWKWebViewSample.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-APLWKWebViewSample.release.xcconfig"; path = "Pods/Target Support Files/Pods-APLWKWebViewSample/Pods-APLWKWebViewSample.release.xcconfig"; sourceTree = "<group>"; };
 		63C8187917042756EE1906F8 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 		79B54D652775EFE2A3DA5F17 /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
 		82705A551CB40D1D00D73149 /* APLWKWebViewSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = APLWKWebViewSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -35,6 +36,8 @@
 		82705A801CB4111C00D73149 /* RefreshView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RefreshView.h; sourceTree = "<group>"; };
 		82705A811CB4111C00D73149 /* RefreshView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RefreshView.m; sourceTree = "<group>"; };
 		BDAB0E39E6D0549E017EA7C4 /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
+		EC440D1FD82A353867474BA3 /* libPods-APLWKWebViewSample.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-APLWKWebViewSample.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F0EA29C16F7B3F9EED881073 /* Pods-APLWKWebViewSample.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-APLWKWebViewSample.debug.xcconfig"; path = "Pods/Target Support Files/Pods-APLWKWebViewSample/Pods-APLWKWebViewSample.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -42,7 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				BF5B7DAB3A4C7DEBFA6E4F7D /* libPods.a in Frameworks */,
+				626F73FE6A08D7501C4E6426 /* libPods-APLWKWebViewSample.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,6 +56,7 @@
 			isa = PBXGroup;
 			children = (
 				BDAB0E39E6D0549E017EA7C4 /* libPods.a */,
+				EC440D1FD82A353867474BA3 /* libPods-APLWKWebViewSample.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -62,6 +66,8 @@
 			children = (
 				79B54D652775EFE2A3DA5F17 /* Pods.debug.xcconfig */,
 				63C8187917042756EE1906F8 /* Pods.release.xcconfig */,
+				F0EA29C16F7B3F9EED881073 /* Pods-APLWKWebViewSample.debug.xcconfig */,
+				336448ADD349B9BB0A264FDA /* Pods-APLWKWebViewSample.release.xcconfig */,
 			);
 			name = Pods;
 			sourceTree = "<group>";
@@ -118,11 +124,12 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 82705A6C1CB40D1D00D73149 /* Build configuration list for PBXNativeTarget "APLWKWebViewSample" */;
 			buildPhases = (
-				4353788E6F034966985098DA /* Check Pods Manifest.lock */,
+				4353788E6F034966985098DA /* [CP] Check Pods Manifest.lock */,
 				82705A511CB40D1D00D73149 /* Sources */,
 				82705A521CB40D1D00D73149 /* Frameworks */,
 				82705A531CB40D1D00D73149 /* Resources */,
-				2AFB6317A2050939248C092C /* Copy Pods Resources */,
+				2AFB6317A2050939248C092C /* [CP] Copy Pods Resources */,
+				427BA869EAAD73D899083210 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -139,7 +146,7 @@
 		82705A4D1CB40D1D00D73149 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0730;
+				LastUpgradeCheck = 0900;
 				ORGANIZATIONNAME = apploft.;
 				TargetAttributes = {
 					82705A541CB40D1D00D73149 = {
@@ -180,34 +187,52 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		2AFB6317A2050939248C092C /* Copy Pods Resources */ = {
+		2AFB6317A2050939248C092C /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Copy Pods Resources";
+			name = "[CP] Copy Pods Resources";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods/Pods-resources.sh\"\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-APLWKWebViewSample/Pods-APLWKWebViewSample-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		4353788E6F034966985098DA /* Check Pods Manifest.lock */ = {
+		427BA869EAAD73D899083210 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
 			);
-			name = "Check Pods Manifest.lock";
+			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [[ $? != 0 ]] ; then\n    cat << EOM\nerror: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\nEOM\n    exit 1\nfi\n";
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-APLWKWebViewSample/Pods-APLWKWebViewSample-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		4353788E6F034966985098DA /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-APLWKWebViewSample-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -255,13 +280,21 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -285,7 +318,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 9.3;
 				MTL_ENABLE_DEBUG_INFO = YES;
-				ONLY_ACTIVE_ARCH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				SDKROOT = iphoneos;
 			};
 			name = Debug;
@@ -299,13 +332,21 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
 				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
 				CLANG_WARN_CONSTANT_CONVERSION = YES;
 				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
 				CLANG_WARN_EMPTY_BODY = YES;
 				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
@@ -330,7 +371,7 @@
 		};
 		82705A6D1CB40D1D00D73149 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 79B54D652775EFE2A3DA5F17 /* Pods.debug.xcconfig */;
+			baseConfigurationReference = F0EA29C16F7B3F9EED881073 /* Pods-APLWKWebViewSample.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = APLWKWebViewSample/Info.plist;
@@ -342,7 +383,7 @@
 		};
 		82705A6E1CB40D1D00D73149 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 63C8187917042756EE1906F8 /* Pods.release.xcconfig */;
+			baseConfigurationReference = 336448ADD349B9BB0A264FDA /* Pods-APLWKWebViewSample.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				INFOPLIST_FILE = APLWKWebViewSample/Info.plist;

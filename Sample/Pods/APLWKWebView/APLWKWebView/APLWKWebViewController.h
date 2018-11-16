@@ -37,7 +37,7 @@
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
  
- @param toolbarShouldHide whether the toolbar should be displayed or hidden.
+ @param hideToolbar whether the toolbar should be displayed or hidden.
  */
 - (void)aplWebViewController:(APLWKWebViewController *)webViewController toolbarShouldHide:(BOOL)hideToolbar;
 
@@ -120,7 +120,7 @@
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
  
- @param isLoadingNow whether loading starts or finishes
+ @param pageTitle the new page title that was extracted from the loaded page
  */
 - (void)aplWebViewController:(APLWKWebViewController *)webViewController didChangePageTitle:(NSString *)pageTitle;
 

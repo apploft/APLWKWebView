@@ -22,6 +22,6 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
 
-  s.dependency 'APLPullToRefreshContainer', '~> 0.0.2'
+  s.dependency 'APLPullToRefreshContainer', '~> 0.0.3'
 
 end

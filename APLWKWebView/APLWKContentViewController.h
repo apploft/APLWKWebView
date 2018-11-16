@@ -38,6 +38,6 @@
  */
 - (WKWebView *)installWebViewDelegate:(id<WKNavigationDelegate, WKUIDelegate>)webViewDelegate;
 
-- (instancetype)initWithAPLWKWebView:(APLWKWebView *)webView;
+- (instancetype)initWithAPLWKWebView:(APLWKWebViewController *)webView;
 
 @end

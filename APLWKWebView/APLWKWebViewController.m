@@ -57,7 +57,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     self.contentView = childRootView;
     
     [self setupLoadingIndicator];
-    [self configureWebViewFromDelegate:self.delegate];
+    [self configureWebViewFromDelegate:(id)self.delegate];
     
     if (self.pendingLoadRequest) {
         [self.webView loadRequest:self.pendingLoadRequest];
@@ -80,7 +80,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 #pragma mark - Load Threshold
 
-- (void)addLoadThresholdReachedHandlerForNextLoad:(void (^)())loadThresholdReachedHandler {
+- (void)addLoadThresholdReachedHandlerForNextLoad:(void (^)(void))loadThresholdReachedHandler {
     [self.pendingLoadThresholdReachedCompletionHandlers addObject:loadThresholdReachedHandler];
 }
 
@@ -120,15 +120,15 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         if ([finished boolValue]) {
             [self finishPullToRefresh];
             [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-            [_progressView setProgress:1 animated:YES];
+            [self->_progressView setProgress:1 animated:YES];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 /*
                  * Imitate Safari, which fills the progress bar before hiding it.
                  */
-                _progressView.hidden = YES;
+                self->_progressView.hidden = YES;
             });
-            if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
-                [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
+            if ([self->_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
+                [self->_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
             }
             [self updateBottomItems];
         }

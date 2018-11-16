@@ -1,15 +1,21 @@
 PODS:
   - APLPullToRefreshContainer (0.0.3)
   - APLWKWebView (0.0.6):
-    - APLPullToRefreshContainer (~> 0.0.2)
+    - APLPullToRefreshContainer (~> 0.0.3)
 
 DEPENDENCIES:
   - APLWKWebView
 
+SPEC REPOS:
+  "git@bitbucket.org:lb-lab/alpodspecs.git":
+    - APLWKWebView
+  https://github.com/cocoapods/specs.git:
+    - APLPullToRefreshContainer
+
 SPEC CHECKSUMS:
-  APLPullToRefreshContainer: 2f573316219b1e99eb9294967566935687ce2dcd
-  APLWKWebView: 129ce636322d49613287819cbdf4f7c881fe731a
+  APLPullToRefreshContainer: 8a568211b12c35fc24884e1feb3ab9becc67cb06
+  APLWKWebView: 2b6bfcb8d873feb72935ffc7f45f19a9941f9e95
 
-PODFILE CHECKSUM: e5fb14e0b2e59ef77532e88633f8b6c19be2aab9
+PODFILE CHECKSUM: a6a0ab1870530ac1eb0492f7d11b37fc754ee6ed
 
-COCOAPODS: 1.3.1
+COCOAPODS: 1.5.3

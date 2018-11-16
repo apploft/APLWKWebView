@@ -178,13 +178,13 @@ static const CGFloat APLPullToRefreshAnimationDuration = 0.2;
     [_currentPullToRefreshView layoutIfNeeded];
     _bottomConstraint.constant = _lastTopLayoutValue;
     [UIView animateWithDuration:APLPullToRefreshAnimationDuration animations:^{
-        [_currentPullToRefreshView layoutIfNeeded];
-        _currentPullToRefreshView.alpha = 0;
-        _pullToRefreshViewHeight = 0;
+        [self->_currentPullToRefreshView layoutIfNeeded];
+        self->_currentPullToRefreshView.alpha = 0;
+        self->_pullToRefreshViewHeight = 0;
         [self setChildContentInsetWithTopOffset:0 forceApplyingLayoutGuides:YES];
     } completion:^(BOOL finished) {
         [self removePullToRefreshView];
-        _pullToRefreshInProgress = NO;
+        self->_pullToRefreshInProgress = NO;
     }];
 }
 
@@ -199,11 +199,11 @@ static const CGFloat APLPullToRefreshAnimationDuration = 0.2;
     [_currentGestureScrollView setContentOffset:contentOffset animated:NO];
     
     [UIView animateWithDuration:APLPullToRefreshAnimationDuration animations:^{
-        [_currentPullToRefreshView layoutIfNeeded];
-        [self setChildContentInsetWithTopOffset:_pullToRefreshViewHeight forceApplyingLayoutGuides:YES];
-        _currentGestureScrollView.contentOffset = CGPointMake(0, -_pullToRefreshViewHeight -_lastTopLayoutValue);
+        [self->_currentPullToRefreshView layoutIfNeeded];
+        [self setChildContentInsetWithTopOffset:self->_pullToRefreshViewHeight forceApplyingLayoutGuides:YES];
+        self->_currentGestureScrollView.contentOffset = CGPointMake(0, -self->_pullToRefreshViewHeight -self->_lastTopLayoutValue);
     } completion:^(BOOL finished) {
-        _currentGestureScrollView.showsVerticalScrollIndicator = _scrollViewShowsScrollIndicator;
+        self->_currentGestureScrollView.showsVerticalScrollIndicator = self->_scrollViewShowsScrollIndicator;
     }];
     
     _gestureRecognizer.enabled = NO;

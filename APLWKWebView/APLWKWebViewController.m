@@ -89,7 +89,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         NSArray *loadThresoldCompletionHandlers = self.pendingLoadThresholdReachedCompletionHandlers;
         self.pendingLoadThresholdReachedCompletionHandlers = nil;
         
-        for (void (^completionHandler)() in loadThresoldCompletionHandlers) {
+        for (void (^completionHandler)(void) in loadThresoldCompletionHandlers) {
             completionHandler();
         }
     }
@@ -258,7 +258,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
     BOOL shouldHideToolbar = scrollView.contentOffset.y > _lastYPosition;
     
-    id<APLWKWebViewDelegate>delegate = self.delegate;
+    id<APLWKWebViewDelegate>delegate = self.aplWebViewDelegate;
     if ([delegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
         [delegate aplWebViewController:self toolbarShouldHide:shouldHideToolbar];
     }
@@ -410,7 +410,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)webView:(WKWebView *)webView didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition, NSURLCredential * _Nullable))completionHandler {
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didReceiveAuthenticationChallenge:completionHandler:)]) {
-        [self.aplWebViewDelegate aplWebViewController:webView didReceiveAuthenticationChallenge:challenge completionHandler:completionHandler];
+        [self.aplWebViewDelegate aplWebViewController:self didReceiveAuthenticationChallenge:challenge completionHandler:completionHandler];
     } else {
         completionHandler(NSURLSessionAuthChallengePerformDefaultHandling, nil);
     }

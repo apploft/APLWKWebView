@@ -18,7 +18,7 @@
 
 @implementation APLWKContentViewController
 
-- (instancetype)initWithAPLWKWebView:(APLWKWebViewController *)webViewController {
+- (instancetype)initWithAPLWKWebViewController:(APLWKWebViewController *)webViewController {
     if (self = [super init]) {
         _webViewController = webViewController;
     }

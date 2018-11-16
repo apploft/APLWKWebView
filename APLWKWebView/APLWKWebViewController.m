@@ -346,7 +346,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (APLWKContentViewController *)contentViewController {
     if (!_contentViewController) {
-        _contentViewController = [[APLWKContentViewController alloc] initWithAPLWKWebView:self];
+        _contentViewController = [[APLWKContentViewController alloc] initWithAPLWKWebViewController:self];
     }
     
     return _contentViewController;

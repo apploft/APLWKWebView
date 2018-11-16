@@ -166,7 +166,7 @@
 #pragma mark - Pull To Refresh handling
 - (void)loadRequest:(NSURLRequest *)request;
 - (void)finishPullToRefresh;
-- (void)addLoadThresholdReachedHandlerForNextLoad:(void(^)())loadThresholdReachedHandler;
+- (void)addLoadThresholdReachedHandlerForNextLoad:(void(^)(void))loadThresholdReachedHandler;
 
 #pragma mark - Push Handling
 - (void)pushNavigationAction:(WKNavigationAction *)action;

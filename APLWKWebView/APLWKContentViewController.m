@@ -57,4 +57,11 @@
     return _webView;
 }
 
+- (WKWebView *)resetWebView {
+    id<WKNavigationDelegate, WKUIDelegate> delegate = (id)_webView.navigationDelegate;
+    [_webView removeFromSuperview];
+    _webView = nil;
+    return [self installWebViewDelegate:delegate];
+}
+
 @end

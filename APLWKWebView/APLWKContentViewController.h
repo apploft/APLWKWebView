@@ -39,5 +39,6 @@
 - (WKWebView *)installWebViewDelegate:(id<WKNavigationDelegate, WKUIDelegate>)webViewDelegate;
 
 - (instancetype)initWithAPLWKWebViewController:(APLWKWebViewController *)webViewController;
+- (WKWebView *)resetWebView;
 
 @end

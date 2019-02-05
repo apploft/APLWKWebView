@@ -160,6 +160,8 @@
 @property (nonatomic) UIBarButtonItem *backButtonItem;
 @property (nonatomic) UIBarButtonItem *forwardButtonItem;
 
+- (void)resetWebView;
+
 #pragma mark - View Controller Appearence
 - (void)updateNavigationItemTitle:(NSString *)newTitle;
 

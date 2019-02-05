@@ -48,11 +48,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     [self.contentViewController didMoveToParentViewController:self];
     WKWebView *webView = [self.contentViewController installWebViewDelegate:self];
     self.webView = webView;
-    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [self observeWebView:webView];
     
     self.contentView = childRootView;
     
@@ -65,16 +61,29 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-- (void)dealloc {
-    WKWebView *webView = self.webView;
+- (void)observeWebView:(WKWebView *)webView {
+    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+}
+
+- (void)removeObserversFromWebView:(WKWebView *)webView {
     [webView removeObserver:self forKeyPath:@"estimatedProgress" context:kAPLWKWebViewKVOContext];
     [webView removeObserver:self forKeyPath:@"title" context:kAPLWKWebViewKVOContext];
     [webView removeObserver:self forKeyPath:@"loading" context:kAPLWKWebViewKVOContext];
     [webView removeObserver:self forKeyPath:@"canGoBack" context:kAPLWKWebViewKVOContext];
     [webView removeObserver:self forKeyPath:@"canGoForward" context:kAPLWKWebViewKVOContext];
-    
+
     if (webView.scrollView.delegate == self) {
         webView.scrollView.delegate = nil;
+    }
+}
+
+- (void)dealloc {
+    if (_webView) {
+        [self removeObserversFromWebView:_webView];
     }
 }
 
@@ -107,6 +116,14 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)updateNavigationItemTitle:(NSString *)newTitle {
     self.navigationItem.title = newTitle;
+}
+
+- (void)resetWebView {
+    [self removeObserversFromWebView:self.webView];
+    WKWebView *newInstance = [self.contentViewController resetWebView];
+    self.webView = newInstance;
+    [self observeWebView:newInstance];
+    [self configureWebViewFromDelegate:_aplWebViewDelegate];
 }
 
 #pragma mark - KVO: Loading Progress

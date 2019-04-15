@@ -46,7 +46,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     self.webView = webView;
     [self observeWebView:webView];
 
-    self.contentView = childRootView;
+    self.contentView = self.contentWebViewController.view;
 
     [self setupLoadingIndicator];
     [self configureWebViewFromDelegate:(id)self.delegate];

@@ -30,11 +30,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 @end
 
-@interface APLPullToRefreshContainerViewController (@compatibility_alias)
-
-- (void)setContentViewController:(UIViewController *)viewController;
-
-@end
 
 @implementation APLWKWebViewController
 
@@ -44,14 +39,9 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     [super viewDidLoad];
     self.loadThreshold = 0.9;
 
-    [self addChildViewController:self.contentWebViewController];
 
-    UIView *childRootView = self.contentWebViewController.view;
-    UIView *parentView = self.view;
-    childRootView.frame = parentView.frame;
-    [parentView addSubview:childRootView];
+    [self embedContentViewController:self.contentWebViewController];
 
-    [self.contentWebViewController didMoveToParentViewController:self];
     WKWebView *webView = [self.contentWebViewController installWebViewDelegate:self];
     self.webView = webView;
     [self observeWebView:webView];
@@ -372,7 +362,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         _contentWebViewController = [[APLWKContentViewController alloc] initWithAPLWKWebViewController:self];
     }
     self.delegate = self;
-    self.contentViewController = _contentWebViewController;
     return _contentWebViewController;
 }
 

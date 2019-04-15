@@ -14,8 +14,8 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 @interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate>
 
-@property (nonatomic) APLWKContentViewController *contentViewController;
 @property (nonatomic, strong) APLPullToRefreshCompletionHandler pendingPullToRefreshCompletionHandler;
+@property (nonatomic) APLWKContentViewController *contentWebViewController;
 @property (nonatomic) NSMutableArray *pendingLoadThresholdReachedCompletionHandlers;
 @property (nonatomic) BOOL didFinishDOMLoad;
 
@@ -37,24 +37,24 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
     [super viewDidLoad];
     self.loadThreshold = 0.9;
-    
-    [self addChildViewController:self.contentViewController];
-    
-    UIView *childRootView = self.contentViewController.view;
+
+    [self addChildViewController:self.contentWebViewController];
+
+    UIView *childRootView = self.contentWebViewController.view;
     UIView *parentView = self.view;
     childRootView.frame = parentView.frame;
     [parentView addSubview:childRootView];
-    
-    [self.contentViewController didMoveToParentViewController:self];
-    WKWebView *webView = [self.contentViewController installWebViewDelegate:self];
+
+    [self.contentWebViewController didMoveToParentViewController:self];
+    WKWebView *webView = [self.contentWebViewController installWebViewDelegate:self];
     self.webView = webView;
     [self observeWebView:webView];
-    
+
     self.contentView = childRootView;
-    
+
     [self setupLoadingIndicator];
     [self configureWebViewFromDelegate:(id)self.delegate];
-    
+
     if (self.pendingLoadRequest) {
         [self.webView loadRequest:self.pendingLoadRequest];
         self.pendingLoadRequest = nil;
@@ -97,7 +97,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (_pendingLoadThresholdReachedCompletionHandlers) {
         NSArray *loadThresoldCompletionHandlers = self.pendingLoadThresholdReachedCompletionHandlers;
         self.pendingLoadThresholdReachedCompletionHandlers = nil;
-        
+
         for (void (^completionHandler)(void) in loadThresoldCompletionHandlers) {
             completionHandler();
         }
@@ -120,7 +120,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)resetWebView {
     [self removeObserversFromWebView:self.webView];
-    WKWebView *newInstance = [self.contentViewController resetWebView];
+    WKWebView *newInstance = [self.contentWebViewController resetWebView];
     self.webView = newInstance;
     [self observeWebView:newInstance];
     [self configureWebViewFromDelegate:_aplWebViewDelegate];
@@ -132,7 +132,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (_didFinishDOMLoad) {
         return;
     }
-    
+
     [self.webView evaluateJavaScript:@"document.readyState == \"interactive\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
         if ([finished boolValue]) {
             [self finishPullToRefresh];
@@ -157,17 +157,17 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
      * Direct ivar access intended because no lazy initializers
      * should be fired.
      */
-    
+
     if (context != kAPLWKWebViewKVOContext) {
         [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
         return;
     } else if (object != _webView) {
         return;
     }
-    
+
     if ([keyPath isEqualToString:@"estimatedProgress"]) {
         [_progressView setProgress:[change[NSKeyValueChangeNewKey] floatValue] animated:YES];
-        
+
         if (_webView.estimatedProgress > _loadThreshold) {
             [self loadThresholdReached];
         } else if (_useDOMReadyEvent) {
@@ -205,7 +205,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (!_progressView) {
         _progressView = [UIProgressView new];
     }
-    
+
     return _progressView;
 }
 
@@ -215,7 +215,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     progressView.translatesAutoresizingMaskIntoConstraints = NO;
     progressView.hidden = YES;
     [view addSubview:progressView];
-    
+
     id<UILayoutSupport>topLayoutGuide = self.topLayoutGuide;
     NSDictionary *bindings = NSDictionaryOfVariableBindings(progressView, topLayoutGuide);
     [view addConstraints:[NSLayoutConstraint constraintsWithVisualFormat:@"H:|[progressView]|" options:0 metrics:nil views:bindings]];
@@ -224,11 +224,11 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 #pragma mark - Pull To Refresh Handling
 
-- (UIScrollView *)aplPullToRefreshContentScrollView {
+- (UIScrollView *)scrollView {
     return self.webView.scrollView;
 }
 
-- (void)aplDidTriggerPullToRefreshCompletion:(APLPullToRefreshCompletionHandler)completionHandler {
+- (void)aplPullToRefreshContainer:(APLPullToRefreshContainerViewController *)container didTriggerPullToRefreshWithCompletion:(APLPullToRefreshCompletionHandler)completionHandler {
     self.pendingPullToRefreshCompletionHandler = completionHandler;
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidTriggerPullToRefresh:)]) {
         [self.aplWebViewDelegate aplWebViewDidTriggerPullToRefresh:self];
@@ -237,11 +237,11 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-- (UIView<APLPullToRefreshView> *)aplPullToRefreshPullToRefreshView {
+- (UIView<APLPullToRefreshView> *)aplPullToRefreshPullToRefreshViewForContainer:(APLPullToRefreshContainerViewController *)container {
     return nil;
 }
 
-- (void)aplPullToRefreshDidInstallPullToRefreshView:(id<APLPullToRefreshView>)pullToRefreshView {
+- (void)aplPullToRefreshContainer:(APLPullToRefreshContainerViewController *)container didInstallPullToRefreshView:(id<APLPullToRefreshView>)pullToRefreshView {
     [self.view bringSubviewToFront:self.progressView];
 }
 
@@ -249,7 +249,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (!_pendingPullToRefreshCompletionHandler) {
         return;
     }
-    
+
     _pendingPullToRefreshCompletionHandler();
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidFinishPullToRefresh:)]) {
         [self.aplWebViewDelegate aplWebViewDidFinishPullToRefresh:self];
@@ -274,7 +274,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
     BOOL shouldHideToolbar = scrollView.contentOffset.y > _lastYPosition;
-    
+
     id<APLWKWebViewDelegate>delegate = self.aplWebViewDelegate;
     if ([delegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
         [delegate aplWebViewController:self toolbarShouldHide:shouldHideToolbar];
@@ -289,13 +289,13 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     UIBarButtonItem *refreshItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self.webView action:@selector(reload)];
     self.bottomEnabledColor = tintColor;
     self.bottomDisabledColor = disabledColor;
-    
+
     if (tintColor) {
         refreshItem.tintColor = tintColor;
     }
-    
+
     [self updateBottomItems];
-    
+
     NSArray *suggestedItems = @[
                                 backButtonItem,
                                 spacer,
@@ -323,7 +323,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (!_backButtonItem) {
         _backButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"<" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goBack)];
     }
-    
+
     return _backButtonItem;
 }
 
@@ -331,7 +331,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     if (!_forwardButtonItem) {
         _forwardButtonItem = [[UIBarButtonItem alloc] initWithTitle:@">" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goForward)];
     }
-    
+
     return _forwardButtonItem;
 }
 
@@ -345,7 +345,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
          */
         return;
     }
-    
+
     WKWebView *webView = self.webView;
     BOOL shouldEnableNavigationGestures = ![delegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:)];
     webView.allowsBackForwardNavigationGestures = shouldEnableNavigationGestures;
@@ -354,26 +354,27 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)setAplWebViewDelegate:(id<APLWKWebViewDelegate>)aplWebViewDelegate {
     _aplWebViewDelegate = aplWebViewDelegate;
-    
+
     [self configureWebViewFromDelegate:aplWebViewDelegate];
 }
 
 
 #pragma mark - Lazy Initializers
 
-- (APLWKContentViewController *)contentViewController {
-    if (!_contentViewController) {
-        _contentViewController = [[APLWKContentViewController alloc] initWithAPLWKWebViewController:self];
+- (APLWKContentViewController *)contentWebViewController {
+    if (!_contentWebViewController) {
+        _contentWebViewController = [[APLWKContentViewController alloc] initWithAPLWKWebViewController:self];
     }
-    
-    return _contentViewController;
+    self.delegate = self;
+    self.contentViewController = _contentWebViewController;
+    return _contentWebViewController;
 }
 
 - (NSMutableArray *)pendingLoadThresholdReachedCompletionHandlers {
     if (!_pendingLoadThresholdReachedCompletionHandlers) {
         _pendingLoadThresholdReachedCompletionHandlers = [NSMutableArray new];
     }
-    
+
     return _pendingLoadThresholdReachedCompletionHandlers;
 }
 
@@ -392,7 +393,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)webView:(WKWebView *)webView didCommitNavigation:(WKNavigation *)navigation {
     [UIApplication sharedApplication].networkActivityIndicatorVisible = YES;
-    
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didCommitNavigation:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didCommitNavigation:navigation];
     }
@@ -401,7 +402,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 - (void)webView:(WKWebView *)webView didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailNavigation:withError:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFailNavigation:navigation withError:error];
     }
@@ -410,7 +411,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 - (void)webView:(WKWebView *)webView didFinishNavigation:(WKNavigation *)navigation {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFinishNavigation:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFinishNavigation:navigation];
     }
@@ -419,7 +420,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 - (void)webView:(WKWebView *)webView didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error {
     [self finishPullToRefresh];
     [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-    
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didFailProvisionalNavigation:withError:)]) {
         [self.aplWebViewDelegate aplWebViewController:self didFailProvisionalNavigation:navigation withError:error];
     }
@@ -459,7 +460,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     // This method is only called if our delegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:).
     // Hence this call is safe:
     APLWKWebViewController *freshWebView = [self.aplWebViewDelegate aplWebViewControllerFreshInstanceForPush:self];
-    
+
     APLPullToRefreshWebViewSegue *segue = [[APLPullToRefreshWebViewSegue alloc] initWithIdentifier:@"APLPullToRefreshWKWebViewSegue" source:self destination:freshWebView];
     [freshWebView loadRequest:action.request];
     [segue perform];

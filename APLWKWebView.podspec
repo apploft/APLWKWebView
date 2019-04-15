@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "APLWKWebView"
-  s.version      = "1.0.1"
+  s.version      = "1.0.2"
   s.summary      = "APLWKWebViewController contains a WKWebView, a Pull to Refresh control and a loading indicator"
 
   s.description  = <<-DESC
@@ -14,7 +14,7 @@ Pod::Spec.new do |s|
   
   s.author       = 'Nico Schuemann'
 
-  s.platform     = :ios, '9.0'
+  s.platform     = :ios, '10.0'
 
   s.source       = { :git => "https://github.com/apploft/APLWKWebView.git", :tag => s.version.to_s }
 
@@ -23,6 +23,6 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
 
-  s.dependency 'APLPullToRefreshContainer', '~> 0.0.3'
+  s.dependency 'APLPullToRefreshContainer', '~> 1.0.0'
 
 end

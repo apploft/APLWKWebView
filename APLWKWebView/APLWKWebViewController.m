@@ -30,6 +30,12 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 @end
 
+@interface APLPullToRefreshContainerViewController (@compatibility_alias)
+
+- (void)setContentViewController:(UIViewController *)viewController;
+
+@end
+
 @implementation APLWKWebViewController
 
 - (void)viewDidLoad {
@@ -228,7 +234,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     return self.webView.scrollView;
 }
 
-- (void)aplPullToRefreshContainer:(APLPullToRefreshContainerViewController *)container didTriggerPullToRefreshWithCompletion:(APLPullToRefreshCompletionHandler)completionHandler {
+- (void)aplPullToRefreshContainer:(APLPullToRefreshContainerViewController *)container didTriggerPullToRefreshCompletion:(APLPullToRefreshCompletionHandler)completionHandler {
     self.pendingPullToRefreshCompletionHandler = completionHandler;
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewDidTriggerPullToRefresh:)]) {
         [self.aplWebViewDelegate aplWebViewDidTriggerPullToRefresh:self];

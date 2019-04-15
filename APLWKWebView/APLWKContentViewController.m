@@ -57,6 +57,10 @@
     return _webView;
 }
 
+- (UIScrollView *)scrollView {
+    return _webView.scrollView;
+}
+
 - (WKWebView *)resetWebView {
     id<WKNavigationDelegate, WKUIDelegate> delegate = (id)_webView.navigationDelegate;
     [_webView removeFromSuperview];

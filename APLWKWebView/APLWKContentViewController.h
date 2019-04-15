@@ -41,4 +41,6 @@
 - (instancetype)initWithAPLWKWebViewController:(APLWKWebViewController *)webViewController;
 - (WKWebView *)resetWebView;
 
+@property (nonatomic, readonly) UIScrollView *scrollView;
+
 @end

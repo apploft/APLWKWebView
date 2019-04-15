@@ -233,10 +233,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-- (UIView<APLPullToRefreshView> *)aplPullToRefreshPullToRefreshViewForContainer:(APLPullToRefreshContainerViewController *)container {
-    return nil;
-}
-
 - (void)aplPullToRefreshContainer:(APLPullToRefreshContainerViewController *)container didInstallPullToRefreshView:(id<APLPullToRefreshView>)pullToRefreshView {
     [self.view bringSubviewToFront:self.progressView];
 }

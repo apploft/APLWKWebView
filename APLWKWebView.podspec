@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "APLWKWebView"
-  s.version      = "1.0.6"
+  s.version      = "1.0.7"
   s.summary      = "APLWKWebViewController contains a WKWebView, a Pull to Refresh control and a loading indicator"
 
   s.description  = <<-DESC
@@ -23,6 +23,6 @@ Pod::Spec.new do |s|
 
   s.requires_arc = true
 
-  s.dependency 'APLPullToRefreshContainer', '~> 1.0.1'
+  s.dependency 'APLPullToRefreshContainer', '~> 1.0.2'
 
 end

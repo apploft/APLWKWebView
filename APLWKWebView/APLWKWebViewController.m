@@ -171,7 +171,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 
     [self.webView evaluateJavaScript:@"document.readyState == \"interactive\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
-        if ([finished boolValue]) {        
+        if ([finished boolValue]) {
             [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
             [self->_progressView setProgress:1 animated:YES];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
@@ -326,17 +326,21 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (UIBarButtonItem *)backButtonItem {
     if (!_backButtonItem) {
-        _backButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"<" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goBack)];
+        _backButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"chevron.left"]
+                                                           style:UIBarButtonItemStylePlain
+                                                          target:self.webView
+                                                          action:@selector(goBack)];
     }
-
     return _backButtonItem;
 }
 
 - (UIBarButtonItem *)forwardButtonItem {
     if (!_forwardButtonItem) {
-        _forwardButtonItem = [[UIBarButtonItem alloc] initWithTitle:@">" style:UIBarButtonItemStylePlain target:self.webView action:@selector(goForward)];
+        _forwardButtonItem = [[UIBarButtonItem alloc] initWithImage:[UIImage systemImageNamed:@"chevron.right"]
+                                                              style:UIBarButtonItemStylePlain
+                                                             target:self.webView
+                                                             action:@selector(goForward)];
     }
-
     return _forwardButtonItem;
 }
 

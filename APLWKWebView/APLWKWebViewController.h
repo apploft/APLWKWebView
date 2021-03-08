@@ -6,8 +6,7 @@
 //  Copyright © 2016 apploft. All rights reserved.
 //
 
-#import <APLPullToRefreshContainer/APLPullToRefreshContainerViewController.h>
-
+@import UIKit;
 @import WebKit;
 
 @class APLWKWebViewController;
@@ -21,17 +20,6 @@
 @optional
 
 /**
- There are two flavours of the Safari-like swipe navigation: You either return
- a fresh `APLWKWebViewController` instance or your own subclass. Then it is pushed
- when a link is clicked. Or you return `nil` or don't respond to this selector at all,
- which automatically sets the `WKWebView`'s `shouldEnableNavigationGestures` property
- to yes.
- 
- @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- */
-- (APLWKWebViewController *)aplWebViewControllerFreshInstanceForPush:(APLWKWebViewController *)webViewController;
-
-/**
  This method is called when the user performs a scroll gesture in the web view.
  A Safari-like behaviour is achieved when hiding and unhiding the toolbar here.
  
@@ -40,20 +28,6 @@
  @param hideToolbar whether the toolbar should be displayed or hidden.
  */
 - (void)aplWebViewController:(APLWKWebViewController *)webViewController toolbarShouldHide:(BOOL)hideToolbar;
-
-/**
- A pull-to-refresh gesture has been fully triggered and the web view starts reloading.
- 
- @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- */
-- (void)aplWebViewDidTriggerPullToRefresh:(APLWKWebViewController *)webViewController;
-
-/**
- The web view did finish loading after pull to refresh, the pull-to-refresh controll will hide.
- 
- @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- */
-- (void)aplWebViewDidFinishPullToRefresh:(APLWKWebViewController *)webViewController;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
@@ -132,26 +106,20 @@
   called.
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- 
- @param containingViewController the `UIViewController` instance the `WKWebView` is about to be installed
  */
-- (WKWebViewConfiguration *)aplWebViewController:(APLWKWebViewController *)webViewController
-         configurationForWebViewInViewController:(UIViewController *)containingViewController;
+- (WKWebViewConfiguration * _Nonnull)aplWebViewController:(APLWKWebViewController *)webViewController;
 
 @end
 
 /**
- `APLWKWebViewController` combines `WKWebView` with pull-to-refresh handling
- and a convenient Safari-like navigation bottom bar.
- 
+ `APLWKWebViewController` combines `WKWebView` and a convenient Safari-like navigation bottom bar.
  */
 
-@interface APLWKWebViewController : APLPullToRefreshContainerViewController<APLPullToRefreshContainerDelegate, WKNavigationDelegate, WKUIDelegate>
+@interface APLWKWebViewController : UIViewController<WKNavigationDelegate, WKUIDelegate>
 
-@property (nonatomic) WKWebView *webView;
-@property (nonatomic) UIView *contentView;
+@property (nonatomic, readonly, strong) WKWebView *webView;
 @property (nonatomic) CGFloat loadThreshold;
-@property (nonatomic) UIProgressView *progressView;
+@property (nonatomic, readonly, strong) UIProgressView *progressView;
 @property (nonatomic, weak) id<APLWKWebViewDelegate> aplWebViewDelegate;
 @property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;

@@ -46,7 +46,7 @@
         id<APLWKWebViewDelegate> delegate = self.webViewController.aplWebViewDelegate;
         WKWebViewConfiguration *configuration;
         if ([delegate respondsToSelector:@selector(aplWebViewController:configurationForWebViewInViewController:)]) {
-            configuration = [delegate aplWebViewController:self.webViewController configurationForWebViewInViewController:self];
+            configuration = [delegate aplWebViewController:self.webViewController];
         } else {
             configuration = [WKWebViewConfiguration new];
         }

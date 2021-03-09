@@ -79,10 +79,10 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)loadThresholdReached {
     if (_pendingLoadThresholdReachedCompletionHandlers) {
-        NSArray *loadThresoldCompletionHandlers = self.pendingLoadThresholdReachedCompletionHandlers;
+        NSArray *loadThresholdCompletionHandlers = self.pendingLoadThresholdReachedCompletionHandlers;
         self.pendingLoadThresholdReachedCompletionHandlers = nil;
 
-        for (void (^completionHandler)(void) in loadThresoldCompletionHandlers) {
+        for (void (^completionHandler)(void) in loadThresholdCompletionHandlers) {
             completionHandler();
         }
     }

@@ -125,16 +125,20 @@
 
 @property (nonatomic, weak) id<APLWKWebViewDelegate> aplWebViewDelegate;
 
+/// The threshold for calling the load threshold handler registered via 'addLoadThresholdReachedHandlerForNextLoad'.
+/// The default value of this property is 0.9.
 @property (nonatomic) CGFloat loadThreshold;
+
 @property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
 
 - (void)resetWebView;
 
-#pragma mark - Pull To Refresh handling
-
 - (void)loadRequest:(NSURLRequest *)request;
-- (void)addLoadThresholdReachedHandlerForNextLoad:(void(^)(void))loadThresholdReachedHandler;
+
+/// Register a handler being called when the load threshold has been reached
+/// @param loadThresholdReachedHandler <#loadThresholdReachedHandler description#>
+- (void)addLoadThresholdReachedHandlerForNextLoad:(void (^)(void))loadThresholdReachedHandler;
 
 #pragma mark - Suggested Toolbar Items
 

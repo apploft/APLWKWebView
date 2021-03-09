@@ -118,41 +118,35 @@
 @interface APLWKWebViewController : UIViewController<WKNavigationDelegate, WKUIDelegate>
 
 @property (nonatomic, readonly, strong) WKWebView *webView;
-@property (nonatomic) CGFloat loadThreshold;
 @property (nonatomic, readonly, strong) UIProgressView *progressView;
+@property (nonatomic, readonly, strong) UIBarButtonItem *backButtonItem;
+@property (nonatomic, readonly, strong) UIBarButtonItem *forwardButtonItem;
+@property (nonatomic, readonly, strong) UIBarButtonItem *reloadButtonItem;
+
 @property (nonatomic, weak) id<APLWKWebViewDelegate> aplWebViewDelegate;
+
+@property (nonatomic) CGFloat loadThreshold;
 @property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
 
-
-@property (nonatomic) UIBarButtonItem *backButtonItem;
-@property (nonatomic) UIBarButtonItem *forwardButtonItem;
-
 - (void)resetWebView;
 
-#pragma mark - View Controller Appearence
-- (void)updateNavigationItemTitle:(NSString *)newTitle;
-
 #pragma mark - Pull To Refresh handling
+
 - (void)loadRequest:(NSURLRequest *)request;
-- (void)finishPullToRefresh;
 - (void)addLoadThresholdReachedHandlerForNextLoad:(void(^)(void))loadThresholdReachedHandler;
 
-#pragma mark - Push Handling
-- (void)pushNavigationAction:(WKNavigationAction *)action;
+#pragma mark - Suggested Toolbar Items
 
-#pragma mark - Navigation Tool Bar
 /**
- Returns a suggestion of items for the navigation bottom toolbar. You may change
- anything as long as you leave the items' original target and action intact. You
- may e.g. install anything but the refresh item or whatever.
+ Returns a suggestion of items for the navigation toolbar. The returned array will contain in the following order a backward, spacer, forward,
+ spacer and reload bar button item. You may change anything as long as you leave the items' original target and action intact.
+ You may e.g. install anything but the reload item or whatever.
  
  @param color The items' tint color when they are active
- 
  @param disabledColor The items' tint color when they are disabled, e.g. you cannot navigate further back
- 
  @return An array of suggested items in this order: [back item, spacer, forward item, spacer, refresh item].
  */
-- (NSArray *)suggestedToolbarItemsForNormalTintColor:(UIColor *)color disabledTintColor:(UIColor *)disabledColor;
+- (NSArray * _Nonnull)suggestedToolbarItemsForNormalTintColor:(UIColor * _Nonnull)color disabledTintColor:(UIColor * _Nonnull)disabledColor;
 
 @end

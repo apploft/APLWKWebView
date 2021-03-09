@@ -13,6 +13,9 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 @interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate>
 @property (nonatomic, readwrite, strong) WKWebView *webView;
 @property (nonatomic, readwrite, strong) UIProgressView *progressView;
+@property (nonatomic, readwrite, strong) UIBarButtonItem *backButtonItem;
+@property (nonatomic, readwrite, strong) UIBarButtonItem *forwardButtonItem;
+@property (nonatomic, readwrite, strong) UIBarButtonItem *reloadButtonItem;
 
 @property (nonatomic) NSMutableArray *pendingLoadThresholdReachedCompletionHandlers;
 @property (nonatomic) BOOL didFinishDOMLoad;
@@ -29,6 +32,16 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 @implementation APLWKWebViewController
 
+#pragma mark - Initialization
+
+- (void)dealloc {
+    if (_webView) {
+        [self removeObserversFromWebView:_webView];
+    }
+}
+
+#pragma mark - Appearance callbacks
+
 - (void)viewDidLoad {
     [super viewDidLoad];
 
@@ -44,33 +57,21 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-- (void)observeWebView:(WKWebView *)webView {
-    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-    [webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
-}
+#pragma mark - Navigation Item
 
-- (void)removeObserversFromWebView:(WKWebView *)webView {
-    [webView removeObserver:self forKeyPath:@"estimatedProgress" context:kAPLWKWebViewKVOContext];
-    [webView removeObserver:self forKeyPath:@"title" context:kAPLWKWebViewKVOContext];
-    [webView removeObserver:self forKeyPath:@"loading" context:kAPLWKWebViewKVOContext];
-    [webView removeObserver:self forKeyPath:@"canGoBack" context:kAPLWKWebViewKVOContext];
-    [webView removeObserver:self forKeyPath:@"canGoForward" context:kAPLWKWebViewKVOContext];
-
-    if (webView.scrollView.delegate == self) {
-        webView.scrollView.delegate = nil;
-    }
-}
-
-- (void)dealloc {
-    if (_webView) {
-        [self removeObserversFromWebView:_webView];
-    }
+- (void)updateNavigationItemTitle:(NSString *)newTitle {
+    self.navigationItem.title = newTitle;
 }
 
 #pragma mark - Load Threshold
+
+- (NSMutableArray *)pendingLoadThresholdReachedCompletionHandlers {
+    if (!_pendingLoadThresholdReachedCompletionHandlers) {
+        _pendingLoadThresholdReachedCompletionHandlers = [NSMutableArray new];
+    }
+
+    return _pendingLoadThresholdReachedCompletionHandlers;
+}
 
 - (void)addLoadThresholdReachedHandlerForNextLoad:(void (^)(void))loadThresholdReachedHandler {
     [self.pendingLoadThresholdReachedCompletionHandlers addObject:loadThresholdReachedHandler];
@@ -87,7 +88,20 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-#pragma mark - Web View Logic
+#pragma mark - Web View
+
+/// Lazy getter, creating web view and installing necessary delegates
+- (WKWebView *)webView {
+    if (!_webView) {
+        _webView = [[WKWebView alloc] initWithFrame:CGRectZero
+                                      configuration:[self webViewConfigurationFromDelegateOrDefault]];
+
+        _webView.allowsBackForwardNavigationGestures = YES;
+        _webView.navigationDelegate = self;
+        _webView.UIDelegate = self;
+    }
+    return _webView;
+}
 
 - (void)loadRequest:(NSURLRequest *)request {
     if (self.webView) {
@@ -95,10 +109,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     } else {
         self.pendingLoadRequest = request;
     }
-}
-
-- (void)updateNavigationItemTitle:(NSString *)newTitle {
-    self.navigationItem.title = newTitle;
 }
 
 - (void)resetWebView {
@@ -133,19 +143,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     ]];
 }
 
-/// Lazy getter, creating web view and installing necessary delegates
-- (WKWebView *)webView {
-    if (!_webView) {
-        _webView = [[WKWebView alloc] initWithFrame:CGRectZero
-                                      configuration:[self webViewConfigurationFromDelegateOrDefault]];
-
-        _webView.allowsBackForwardNavigationGestures = YES;
-        _webView.navigationDelegate = self;
-        _webView.UIDelegate = self;
-    }
-    return _webView;
-}
-
 /// Return a web view configuration either from the delegate or a default web view configuration if the 
 -(WKWebViewConfiguration * _Nonnull)webViewConfigurationFromDelegateOrDefault {
     id<APLWKWebViewDelegate> delegate = self.aplWebViewDelegate;
@@ -157,82 +154,6 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         configuration = [WKWebViewConfiguration new];
     }
     return configuration;
-}
-
-- (UIScrollView *)scrollView {
-    return _webView.scrollView;
-}
-
-#pragma mark - KVO: Loading Progress
-
-- (void)checkDOMReady {
-    if (_didFinishDOMLoad) {
-        return;
-    }
-
-    [self.webView evaluateJavaScript:@"document.readyState == \"interactive\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
-        if ([finished boolValue]) {
-            [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
-            [self->_progressView setProgress:1 animated:YES];
-            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.5 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-                /*
-                 * Imitate Safari, which fills the progress bar before hiding it.
-                 */
-                self->_progressView.hidden = YES;
-            });
-            if ([self->_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
-                [self->_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
-            }
-            [self updateBottomItems];
-        }
-    }];
-}
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
-    /*
-     * Direct ivar access intended because no lazy initializers
-     * should be fired.
-     */
-
-    if (context != kAPLWKWebViewKVOContext) {
-        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
-        return;
-    } else if (object != _webView) {
-        return;
-    }
-
-    if ([keyPath isEqualToString:@"estimatedProgress"]) {
-        [_progressView setProgress:[change[NSKeyValueChangeNewKey] floatValue] animated:YES];
-
-        if (_webView.estimatedProgress > _loadThreshold) {
-            [self loadThresholdReached];
-        } else if (_useDOMReadyEvent) {
-            [self checkDOMReady];
-        }
-    } else if ([keyPath isEqualToString:@"title"]) {
-        if (_useContentPageTitle) {
-            NSString *title = change[NSKeyValueChangeNewKey];
-            [self updateNavigationItemTitle:title];
-            if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangePageTitle:)]) {
-                [_aplWebViewDelegate aplWebViewController:self didChangePageTitle:title];
-            }
-        }
-    } else if ([keyPath isEqualToString:@"loading"]) {
-        BOOL loading = [change[NSKeyValueChangeNewKey] boolValue];
-        if (loading) {
-            _didFinishDOMLoad = NO;
-        }
-        _progressView.hidden = !loading;
-        if (!loading) {
-            _progressView.progress = 0;
-        }
-        if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
-            [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:loading];
-        }
-        [self updateBottomItems];
-    } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
-        [self updateBottomItems];
-    }
 }
 
 #pragma mark - Loading Indicator
@@ -247,10 +168,11 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)addLoadingIndicator {
     UIProgressView *progressView = self.progressView;
-    UIView *view = self.view;
+
     progressView.translatesAutoresizingMaskIntoConstraints = NO;
     progressView.hidden = YES;
-    [view addSubview:progressView];
+
+    [self.view addSubview:progressView];
 
     UILayoutGuide *safeAreaLayoutGuide = self.view.safeAreaLayoutGuide;
 
@@ -261,7 +183,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     ]];
 }
 
-#pragma mark - Bottom Navigation Bar
+#pragma mark - Toolbar
 
 - (void)configureBottomBarScrollingDelegateForWebView:(WKWebView *)webView {
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
@@ -279,8 +201,8 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 - (void)scrollViewWillBeginDecelerating:(UIScrollView *)scrollView {
     BOOL shouldHideToolbar = scrollView.contentOffset.y > _lastYPosition;
-
     id<APLWKWebViewDelegate>delegate = self.aplWebViewDelegate;
+
     if ([delegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
         [delegate aplWebViewController:self toolbarShouldHide:shouldHideToolbar];
     }
@@ -291,12 +213,15 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     UIBarButtonItem *forwardButtonItem = self.forwardButtonItem;
     UIBarButtonItem *spacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
     spacer.width = 32;
-    UIBarButtonItem *refreshItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh target:self.webView action:@selector(reload)];
+
+    UIBarButtonItem *flexSpacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
+    UIBarButtonItem *reloadItem = self.reloadButtonItem;
+
     self.bottomEnabledColor = tintColor;
     self.bottomDisabledColor = disabledColor;
 
     if (tintColor) {
-        refreshItem.tintColor = tintColor;
+        reloadItem.tintColor = tintColor;
     }
 
     [self updateBottomItems];
@@ -305,9 +230,8 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
                                 backButtonItem,
                                 spacer,
                                 forwardButtonItem,
-                                spacer,
-                                refreshItem,
-                                [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil],
+                                flexSpacer,
+                                reloadItem
                                 ];
     return suggestedItems;
 }
@@ -344,23 +268,120 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     return _forwardButtonItem;
 }
 
-#pragma mark - Lazy Initializers
+-(UIBarButtonItem*)reloadButtonItem {
+    if (!_reloadButtonItem) {
+        _reloadButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemRefresh
+                                                                          target:self.webView
+                                                                          action:@selector(reload)];
+    }
+    return _reloadButtonItem;
+}
 
-- (NSMutableArray *)pendingLoadThresholdReachedCompletionHandlers {
-    if (!_pendingLoadThresholdReachedCompletionHandlers) {
-        _pendingLoadThresholdReachedCompletionHandlers = [NSMutableArray new];
+#pragma mark - KVO: Loading Progress
+
+- (void)observeWebView:(WKWebView *)webView {
+    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"canGoForward" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+}
+
+- (void)removeObserversFromWebView:(WKWebView *)webView {
+    [webView removeObserver:self forKeyPath:@"estimatedProgress" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"title" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"loading" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"canGoBack" context:kAPLWKWebViewKVOContext];
+    [webView removeObserver:self forKeyPath:@"canGoForward" context:kAPLWKWebViewKVOContext];
+
+    if (webView.scrollView.delegate == self) {
+        webView.scrollView.delegate = nil;
+    }
+}
+
+- (void)checkDOMReady {
+    if (_didFinishDOMLoad) {
+        return;
     }
 
-    return _pendingLoadThresholdReachedCompletionHandlers;
+    [self.webView evaluateJavaScript:@"document.readyState != \"loading\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
+        if ([finished boolValue]) {
+            [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
+            [self setProgressViewProgressTo:1 andHideAfter:1.0];
+
+            if ([self->_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
+                [self->_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
+            }
+            [self updateBottomItems];
+        }
+    }];
+}
+
+-(void)setProgressViewProgressTo:(CGFloat)progressValue andHideAfter:(NSTimeInterval)delayBeforeHiding {
+    [_progressView setProgress:progressValue animated:YES];
+
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayBeforeHiding * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        /*
+         * Imitate Safari, which fills the progress bar before hiding it.
+         */
+        _progressView.hidden = YES;
+        _progressView.progress = 0;
+    });
+}
+
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
+    /*
+     * Direct ivar access intended because no lazy initializers
+     * should be fired.
+     */
+
+    if (context != kAPLWKWebViewKVOContext) {
+        [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
+        return;
+    } else if (object != _webView) {
+        return;
+    }
+
+    if ([keyPath isEqualToString:@"estimatedProgress"]) {
+        CGFloat newProgress = [change[NSKeyValueChangeNewKey] floatValue];
+
+        [_progressView setProgress:newProgress animated:YES];
+
+        if (_webView.estimatedProgress > _loadThreshold) {
+            [self loadThresholdReached];
+        } else if (_useDOMReadyEvent) {
+            [self checkDOMReady];
+        }
+    } else if ([keyPath isEqualToString:@"title"]) {
+        if (_useContentPageTitle) {
+            NSString *title = change[NSKeyValueChangeNewKey];
+            [self updateNavigationItemTitle:title];
+            if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangePageTitle:)]) {
+                [_aplWebViewDelegate aplWebViewController:self didChangePageTitle:title];
+            }
+        }
+    } else if ([keyPath isEqualToString:@"loading"]) {
+        BOOL loading = [change[NSKeyValueChangeNewKey] boolValue];
+        if (loading) {
+            _didFinishDOMLoad = NO;
+        }
+        _progressView.hidden = !loading;
+        if (!loading) {
+            _progressView.progress = 0;
+        }
+        if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
+            [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:loading];
+        }
+        [self updateBottomItems];
+    } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
+        [self updateBottomItems];
+    }
 }
 
 #pragma mark - WKNavigationDelegate and Forwardings
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewControllerFreshInstanceForPush:)] && navigationAction.navigationType == WKNavigationTypeLinkActivated) {
-        decisionHandler(WKNavigationActionPolicyCancel);
-        [self pushNavigationAction:navigationAction];
-    } else if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
         [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandler];
     } else {
         decisionHandler(WKNavigationActionPolicyAllow);

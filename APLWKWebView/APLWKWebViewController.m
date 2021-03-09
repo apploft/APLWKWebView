@@ -49,7 +49,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
     [self addWebViewIfNeeded];
     [self observeWebView:self.webView];
-    [self addLoadingIndicator];
+    [self addProgressView];
 
     if (self.pendingLoadRequest) {
         [self.webView loadRequest:self.pendingLoadRequest];
@@ -166,7 +166,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     return _progressView;
 }
 
-- (void)addLoadingIndicator {
+- (void)addProgressView {
     UIProgressView *progressView = self.progressView;
 
     progressView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -304,7 +304,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         return;
     }
 
-    [self.webView evaluateJavaScript:@"document.readyState != \"loading\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
+    [self.webView evaluateJavaScript:@"document.readyState == \"completed\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
         if ([finished boolValue]) {
             [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
             [self setProgressViewProgressTo:1 andHideAfter:1.0];
@@ -364,10 +364,12 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         BOOL loading = [change[NSKeyValueChangeNewKey] boolValue];
         if (loading) {
             _didFinishDOMLoad = NO;
+            _reloadButtonItem.enabled = NO;
         }
         _progressView.hidden = !loading;
         if (!loading) {
             _progressView.progress = 0;
+            _reloadButtonItem.enabled = YES;
         }
         if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
             [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:loading];

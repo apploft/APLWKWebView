@@ -25,8 +25,8 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 // Needed for bottom bar
 @property (nonatomic) CGFloat lastYPosition;
-@property (nonatomic) UIColor *bottomEnabledColor;
-@property (nonatomic) UIColor *bottomDisabledColor;
+
+@property (nonatomic) BOOL isToolbarHidden;
 @end
 
 
@@ -50,11 +50,30 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     [self addWebViewIfNeeded];
     [self observeWebView:self.webView];
     [self addProgressView];
+    [self setupToolbarIfNeeded];
 
     if (self.pendingLoadRequest) {
         [self.webView loadRequest:self.pendingLoadRequest];
         self.pendingLoadRequest = nil;
     }
+}
+
+- (void)viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+
+    self.isToolbarHidden = [self.navigationController isToolbarHidden];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+
+    self.navigationController.toolbarHidden = [self.toolbarItems count] == 0;
+}
+
+- (void)viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+
+    self.navigationController.toolbarHidden = self.isToolbarHidden;
 }
 
 #pragma mark - Navigation Item
@@ -185,6 +204,15 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 #pragma mark - Toolbar
 
+-(void)setupToolbarIfNeeded {
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(showToolbar:withSuggestedControlItems:)]) {
+        NSArray *items = [self.aplWebViewDelegate showToolbar:self withSuggestedControlItems:[self suggestedToolbarItems]];
+
+        [self updateToolbarItems];
+        self.toolbarItems = items;
+    }
+}
+
 - (void)configureBottomBarScrollingDelegateForWebView:(WKWebView *)webView {
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:toolbarShouldHide:)]) {
         webView.scrollView.delegate = self;
@@ -208,40 +236,36 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
-- (NSArray *)suggestedToolbarItemsForNormalTintColor:(UIColor *)tintColor disabledTintColor:(UIColor *)disabledColor {
+- (NSArray *)suggestedToolbarItems {
     UIBarButtonItem *backButtonItem = self.backButtonItem;
     UIBarButtonItem *forwardButtonItem = self.forwardButtonItem;
-    UIBarButtonItem *spacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:nil action:nil];
+    UIBarButtonItem *reloadButtonItem = self.reloadButtonItem;
+    UIBarButtonItem *spacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace
+                                                                            target:nil
+                                                                            action:nil];
     spacer.width = 32;
 
-    UIBarButtonItem *flexSpacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:nil action:nil];
-    UIBarButtonItem *reloadItem = self.reloadButtonItem;
+    UIBarButtonItem *flexSpacer = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace
+                                                                                target:nil
+                                                                                action:nil];
 
-    self.bottomEnabledColor = tintColor;
-    self.bottomDisabledColor = disabledColor;
-
-    if (tintColor) {
-        reloadItem.tintColor = tintColor;
+    if (self.preferredControlEnabledTintColor) {
+        backButtonItem.tintColor = self.preferredControlEnabledTintColor;
+        forwardButtonItem.tintColor = self.preferredControlEnabledTintColor;
+        reloadButtonItem.tintColor = self.preferredControlEnabledTintColor;
     }
-
-    [self updateBottomItems];
-
-    NSArray *suggestedItems = @[
-                                backButtonItem,
-                                spacer,
-                                forwardButtonItem,
-                                flexSpacer,
-                                reloadItem
-                                ];
-    return suggestedItems;
+    return @[backButtonItem, spacer, forwardButtonItem, flexSpacer, reloadButtonItem];
 }
 
 - (void)setEnabled:(BOOL)enabled andColorForBarButtonItem:(UIBarButtonItem *)item {
     item.enabled = enabled;
-    [item setTitleTextAttributes:@{ NSForegroundColorAttributeName: enabled ? self.bottomEnabledColor : self.bottomDisabledColor} forState:UIControlStateNormal];
+
+    if (self.preferredControlEnabledTintColor && self.preferredControlDisabledTintColor) {
+        item.tintColor = enabled ? self.preferredControlEnabledTintColor : self.preferredControlDisabledTintColor;
+    }
 }
 
-- (void)updateBottomItems {
+- (void)updateToolbarItems {
     if (_backButtonItem || _forwardButtonItem) {
         [self setEnabled:_webView.canGoBack andColorForBarButtonItem:_backButtonItem];
         [self setEnabled:_webView.canGoForward andColorForBarButtonItem:_forwardButtonItem];
@@ -306,13 +330,15 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
     [self.webView evaluateJavaScript:@"document.readyState == \"completed\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
         if ([finished boolValue]) {
+            _didFinishDOMLoad = YES;
+
             [UIApplication sharedApplication].networkActivityIndicatorVisible = NO;
             [self setProgressViewProgressTo:1 andHideAfter:1.0];
 
             if ([self->_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
                 [self->_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
             }
-            [self updateBottomItems];
+            [self updateToolbarItems];
         }
     }];
 }
@@ -374,9 +400,9 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
             [_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:loading];
         }
-        [self updateBottomItems];
+        [self updateToolbarItems];
     } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
-        [self updateBottomItems];
+        [self updateToolbarItems];
     }
 }
 

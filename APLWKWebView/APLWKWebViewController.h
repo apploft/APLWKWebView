@@ -24,58 +24,68 @@
  A Safari-like behaviour is achieved when hiding and unhiding the toolbar here.
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- 
  @param hideToolbar whether the toolbar should be displayed or hidden.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController toolbarShouldHide:(BOOL)hideToolbar;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+           toolbarShouldHide:(BOOL)hideToolbar;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didCommitNavigation:(WKNavigation *)navigation;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+         didCommitNavigation:(WKNavigation * _Nonnull)navigation;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didFailNavigation:(WKNavigation *)navigation withError:(NSError *)error;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+           didFailNavigation:(WKNavigation * _Nonnull)navigation
+                   withError:(NSError * _Nullable)error;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didFailProvisionalNavigation:(WKNavigation *)navigation withError:(NSError *)error;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+didFailProvisionalNavigation:(WKNavigation * _Nonnull)navigation
+                   withError:(NSError * _Nullable)error;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didFinishNavigation:(WKNavigation *)navigation;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+         didFinishNavigation:(WKNavigation * _Nonnull)navigation;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
-           completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition,
-                                       NSURLCredential *credential))completionHandler;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge * _Nonnull)challenge
+           completionHandler:(void (^)(NSURLSessionAuthChallengeDisposition disposition, NSURLCredential * _Nullable credential))completionHandler;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didReceiveServerRedirectForProvisionalNavigation:(WKNavigation *)navigation;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+didReceiveServerRedirectForProvisionalNavigation:(WKNavigation * _Nonnull)navigation;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didStartProvisionalNavigation:(WKNavigation *)navigation;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+didStartProvisionalNavigation:(WKNavigation * _Nonnull)navigation;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+decidePolicyForNavigationAction:(WKNavigationAction * _Nonnull)navigationAction
              decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler;
 
 /**
  Same as the corresponding `WKNavigationDelegate` method.
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController decidePolicyForNavigationResponse:(WKNavigationResponse *)navigationResponse
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationResponse
              decisionHandler:(void (^)(WKNavigationResponsePolicy))decisionHandler;
 
 /**
@@ -83,20 +93,20 @@
  unhide the toolbar once loading starts.
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- 
  @param isLoadingNow whether loading starts or finishes
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didChangeLoadingState:(BOOL)isLoadingNow;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+       didChangeLoadingState:(BOOL)isLoadingNow;
 
 /**
  The window's title should be updated. Use `APLWKWebView`'s `useContentPageTitle` property
  in order to automatically set the view controller's title.
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
- 
  @param pageTitle the new page title that was extracted from the page
  */
-- (void)aplWebViewController:(APLWKWebViewController *)webViewController didChangePageTitle:(NSString *)pageTitle;
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController
+          didChangePageTitle:(NSString * _Nullable)pageTitle;
 
 /**
   If you want to customise the `WKWebView`'s `configuration`, implement this method.
@@ -107,7 +117,16 @@
  
  @param webViewController the `APLWKWebViewController` instance that calls this delegate method.
  */
-- (WKWebViewConfiguration * _Nonnull)aplWebViewController:(APLWKWebViewController *)webViewController;
+- (WKWebViewConfiguration * _Nonnull)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController;
+
+/**
+    Implement this delegate method if you want to show a toolbar with web view control elements.
+    @param suggestedToolbarItems an array of suggested toolbar items in the following order:  [back-item, spacer, forward-item, spacer, refresh-item]
+    @return You may return a modified array by removing elements or changing the order of elements. Alternatively you can return 'nil' in which case no
+    toolbar will be shown.
+ */
+- (NSArray * _Nullable)showToolbar:(APLWKWebViewController* _Nonnull)webViewController
+         withSuggestedControlItems:(NSArray * _Nonnull)suggestedToolbarItems;
 
 @end
 
@@ -117,6 +136,7 @@
 
 @interface APLWKWebViewController : UIViewController<WKNavigationDelegate, WKUIDelegate>
 
+/// Read only access to certain properties. Don't fiddle with the target and action properties of the bar button items.
 @property (nonatomic, readonly, strong) WKWebView *webView;
 @property (nonatomic, readonly, strong) UIProgressView *progressView;
 @property (nonatomic, readonly, strong) UIBarButtonItem *backButtonItem;
@@ -129,28 +149,24 @@
 /// The default value of this property is 0.9.
 @property (nonatomic) CGFloat loadThreshold;
 
+/// Automatically set the title of the HTML page as navigation bar title
 @property (nonatomic, getter=usesContentPageTitle) BOOL useContentPageTitle;
+
+/// Use the document 'readyState' to determine when to end the loading indicator. Default value is 'NO'.
+/// see: [Document.readyState](https://developer.mozilla.org/de/docs/Web/API/Document/readyState)
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
+
+/// If you want to show a toolbar (see delegate method 'showToolbarWithSuggestedControlItems:...') determine the
+/// tint color of these control elements.
+@property (nonatomic, strong) UIColor *preferredControlEnabledTintColor;
+@property (nonatomic, strong) UIColor *preferredControlDisabledTintColor;
 
 - (void)resetWebView;
 
-- (void)loadRequest:(NSURLRequest *)request;
+- (void)loadRequest:(NSURLRequest * _Nonnull)request;
 
 /// Register a handler being called when the load threshold has been reached
 /// @param loadThresholdReachedHandler <#loadThresholdReachedHandler description#>
 - (void)addLoadThresholdReachedHandlerForNextLoad:(void (^)(void))loadThresholdReachedHandler;
-
-#pragma mark - Suggested Toolbar Items
-
-/**
- Returns a suggestion of items for the navigation toolbar. The returned array will contain in the following order a backward, spacer, forward,
- spacer and reload bar button item. You may change anything as long as you leave the items' original target and action intact.
- You may e.g. install anything but the reload item or whatever.
- 
- @param color The items' tint color when they are active
- @param disabledColor The items' tint color when they are disabled, e.g. you cannot navigate further back
- @return An array of suggested items in this order: [back item, spacer, forward item, spacer, refresh item].
- */
-- (NSArray * _Nonnull)suggestedToolbarItemsForNormalTintColor:(UIColor * _Nonnull)color disabledTintColor:(UIColor * _Nonnull)disabledColor;
 
 @end

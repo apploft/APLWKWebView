@@ -154,6 +154,11 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
 /// see: [Document.readyState](https://developer.mozilla.org/de/docs/Web/API/Document/readyState)
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
 
+/// Just hiding the progress view when loading has completed looks artificial. Imitate Safari and
+/// fill the progress view to 100%, then wait for 'hideProgressViewDelay' seconds until the progress view is hidden.
+/// Default value is 0.3.
+@property (nonatomic) NSTimeInterval hideProgressViewDelay;
+
 /// If you want to show a toolbar (see delegate method 'showToolbarWithSuggestedControlItems:...') determine the
 /// tint color of these control elements.
 @property (nonatomic, strong) UIColor * _Nullable preferredControlEnabledTintColor;

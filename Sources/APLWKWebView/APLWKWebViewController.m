@@ -17,6 +17,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
 @property (nonatomic) NSMutableArray *pendingLoadThresholdReachedCompletionHandlers;
 @property (nonatomic) BOOL didFinishDOMLoad;
+@property (nonatomic) NSTimer *hideProgressViewTimer;
 
 // Needed before viewDidLoad
 @property (nonatomic) NSURLRequest *pendingLoadRequest;
@@ -44,6 +45,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     [super viewDidLoad];
 
     self.loadThreshold = 0.9;
+    self.hideProgressViewDelay = 0.3;
 
     [self addWebViewIfNeeded];
     [self observeWebView:self.webView];
@@ -302,7 +304,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 #pragma mark - KVO: Loading Progress
 
 - (void)observeWebView:(WKWebView *)webView {
-    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
+    [webView addObserver:self forKeyPath:@"estimatedProgress" options:NSKeyValueObservingOptionNew|NSKeyValueObservingOptionOld context:kAPLWKWebViewKVOContext];
     [webView addObserver:self forKeyPath:@"title" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
     [webView addObserver:self forKeyPath:@"loading" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
     [webView addObserver:self forKeyPath:@"canGoBack" options:NSKeyValueObservingOptionNew context:kAPLWKWebViewKVOContext];
@@ -322,33 +324,23 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 }
 
 - (void)checkDOMReady {
+    // The idea is not to wait for the whole page, including all advertisements, to have loaded,
+    // but for the DOM to be ready, where the page already appears to the user although some elements
+    // may still be missing.
     if (_didFinishDOMLoad) {
         return;
     }
 
-    [self.webView evaluateJavaScript:@"document.readyState == \"completed\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
+    [self.webView evaluateJavaScript:@"document.readyState != \"loading\" && document.readyState != \"uninitialized\"" completionHandler:^(id _Nullable finished, NSError * _Nullable error) {
         if ([finished boolValue]) {
-            _didFinishDOMLoad = YES;
-            [self setProgressViewProgressTo:1 andHideAfter:1.0];
-
+            self->_didFinishDOMLoad = YES;
+            [self scheduleHideProgressViewTimerAfter:self->_hideProgressViewDelay];
             if ([self->_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
                 [self->_aplWebViewDelegate aplWebViewController:self didChangeLoadingState:NO];
             }
             [self updateToolbarItems];
         }
     }];
-}
-
--(void)setProgressViewProgressTo:(CGFloat)progressValue andHideAfter:(NSTimeInterval)delayBeforeHiding {
-    [_progressView setProgress:progressValue animated:YES];
-
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayBeforeHiding * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        /*
-         * Imitate Safari, which fills the progress bar before hiding it.
-         */
-        _progressView.hidden = YES;
-        _progressView.progress = 0;
-    });
 }
 
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
@@ -366,8 +358,15 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
     if ([keyPath isEqualToString:@"estimatedProgress"]) {
         CGFloat newProgress = [change[NSKeyValueChangeNewKey] floatValue];
+        CGFloat oldProgress = [change[NSKeyValueChangeOldKey] floatValue];
 
-        [_progressView setProgress:newProgress animated:YES];
+        if (!_hideProgressViewTimer) {
+            // While _hideProgressViewTimer exists, the progress is clamped to 100%.
+            // When navigation while loading, animating the "back jump" of
+            // progress looks odd, don't do that.
+            BOOL shouldAnimateChange = newProgress > oldProgress;
+            [_progressView setProgress:newProgress animated:shouldAnimateChange];
+        }
 
         if (_webView.estimatedProgress > _loadThreshold) {
             [self loadThresholdReached];
@@ -385,12 +384,20 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     } else if ([keyPath isEqualToString:@"loading"]) {
         BOOL loading = [change[NSKeyValueChangeNewKey] boolValue];
         if (loading) {
+            [self cancelHideProgressViewTimer];
             _didFinishDOMLoad = NO;
             _reloadButtonItem.enabled = NO;
+            _progressView.hidden = NO;
         }
-        _progressView.hidden = !loading;
         if (!loading) {
-            _progressView.progress = 0;
+            // When using the DOM ready event, DOM ready is the signal for
+            // completion, not the loading state.
+            if (!_useDOMReadyEvent) {
+                [self scheduleHideProgressViewTimerAfter:self->_hideProgressViewDelay];
+            } else {
+                [self checkDOMReady];
+            }
+
             _reloadButtonItem.enabled = YES;
         }
         if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:didChangeLoadingState:)]) {
@@ -400,6 +407,25 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
         [self updateToolbarItems];
     }
+}
+
+#pragma mark - Smooth Progress View Hiding
+
+- (void)scheduleHideProgressViewTimerAfter:(NSTimeInterval)delay {
+    [_hideProgressViewTimer invalidate];
+    [_progressView setProgress:1 animated:NO];
+    _hideProgressViewTimer = [NSTimer scheduledTimerWithTimeInterval:delay target:self selector:@selector(hideProgressViewTimerDidFire:) userInfo:nil repeats:NO];
+}
+
+- (void)cancelHideProgressViewTimer {
+    [_hideProgressViewTimer invalidate];
+    _hideProgressViewTimer = nil;
+}
+
+- (void)hideProgressViewTimerDidFire:(NSTimer *)timer {
+    [self cancelHideProgressViewTimer];
+    _progressView.hidden = YES;
+    _progressView.progress = 0;
 }
 
 #pragma mark - WKNavigationDelegate and Forwardings

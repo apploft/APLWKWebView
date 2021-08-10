@@ -5,10 +5,12 @@
 //
 
 #import "APLWKWebViewController.h"
+#import <MessageUI/MessageUI.h>
+#import "NSURLRequest+APLWKWebViewController.h"
 
 static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
-@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate>
+@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate, MFMailComposeViewControllerDelegate>
 @property (nonatomic, readwrite, strong) WKWebView *webView;
 @property (nonatomic, readwrite, strong) UIProgressView *progressView;
 @property (nonatomic, readwrite, strong) UIBarButtonItem *backButtonItem;
@@ -167,7 +169,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     id<APLWKWebViewDelegate> delegate = self.aplWebViewDelegate;
     WKWebViewConfiguration *configuration;
 
-    if ([delegate respondsToSelector:@selector(aplWebViewController)]) {
+    if ([delegate respondsToSelector:@selector(aplWebViewController:)]) {
         configuration = [delegate aplWebViewController:self];
     } else {
         configuration = [WKWebViewConfiguration new];
@@ -431,10 +433,12 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 #pragma mark - WKNavigationDelegate and Forwardings
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    void (^decisionHandlerWithMailtoLinkHandling)(WKNavigationActionPolicy) = [self decisionHandlerWithMailtoHandlingForDecisionHandler:decisionHandler navigationAction:navigationAction];
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
-        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandler];
+        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandlerWithMailtoLinkHandling];
     } else {
-        decisionHandler(WKNavigationActionPolicyAllow);
+        decisionHandlerWithMailtoLinkHandling(WKNavigationActionPolicyAllow);
     }
 }
 
@@ -488,6 +492,117 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     } else {
         decisionHandler(WKNavigationResponsePolicyAllow);
     }
+}
+
+
+#pragma mark - WKUIDelegate and Forwardings
+
+- (nullable WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:createWebViewWithConfiguration:forNavigationAction:windowFeatures:)]) {
+        return [self.aplWebViewUIDelegate aplWebViewController:self createWebViewWithConfiguration:configuration forNavigationAction:navigationAction windowFeatures:windowFeatures];
+    }
+
+    if (!navigationAction.targetFrame.isMainFrame) {
+        NSURLRequest *request = navigationAction.request;
+        NSURL *targetURL = request.URL;
+        if (!request || !targetURL) {
+            return nil;
+        }
+
+        switch (self.targetBlankPolicy) {
+            case APLWKWebViewTargetBlankPolicyOpenExternally:
+                [[UIApplication sharedApplication] openURL:targetURL options:@{} completionHandler:nil];
+                break;
+
+            case APLWKWebViewTargetBlankPolicyOpenInSameWebView:
+                [self loadRequest:request];
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    return nil;
+}
+
+
+- (void)webViewDidClose:(WKWebView *)webView {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewControllerDidClose:)]) {
+        [self.aplWebViewUIDelegate aplWebViewControllerDidClose:self];
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptAlertPanelWithMessage:message initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler();
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL result))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptConfirmPanelWithMessage:message initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler(NO); // == Cancel, default behavior if selector unimplemented
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(nullable NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString * _Nullable result))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptTextInputPanelWithPrompt:prompt defaultText:defaultText initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler(nil); // == Cancel, default behavior if selector unimplemented
+    }
+}
+
+
+#pragma mark - mailto: link handling
+
+- (void(^)(WKNavigationActionPolicy))decisionHandlerWithMailtoHandlingForDecisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler navigationAction:(WKNavigationAction *)navigationAction {
+    NSURLRequest *request = navigationAction.request;
+    NSArray<NSString *> *recipients = request.aplWKWWmailRecipients;
+    BOOL canSendMail = [MFMailComposeViewController canSendMail];
+
+    if (canSendMail && request.aplWKWWisMailtoRequest && recipients.count > 0) {
+        return ^(WKNavigationActionPolicy policy){
+            if (policy != WKNavigationActionPolicyAllow) {
+                decisionHandler(policy);
+            } else {
+                [self presentMailComposeViewControllerForRecipients:recipients decisionHandler:decisionHandler];
+            }
+        };
+    } else {
+        return decisionHandler;
+    }
+}
+
+- (void)presentMailComposeViewControllerForRecipients:(NSArray<NSString *> *)recipients decisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *subjectLine = @"";
+
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:subjectLineForMailtoRecipients:)]) {
+        subjectLine = [self.aplWebViewDelegate aplWebViewController:self subjectLineForMailtoRecipients:recipients];
+    }
+
+    if (!subjectLine) {
+        // The delegate vetoed the MFMailComposeViewController's presentation.
+        decisionHandler(WKNavigationActionPolicyAllow);
+        return;
+    }
+
+    MFMailComposeViewController* composeVC = [MFMailComposeViewController new];
+    composeVC.mailComposeDelegate = self;
+
+    composeVC.toRecipients = recipients;
+    composeVC.subject = subjectLine;
+
+    [self presentViewController:composeVC animated:YES completion:nil];
+    decisionHandler(WKNavigationActionPolicyCancel);
+}
+
+- (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

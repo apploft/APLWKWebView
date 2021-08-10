@@ -5,10 +5,12 @@
 //
 
 #import "APLWKWebViewController.h"
+#import <MessageUI/MessageUI.h>
+#import "NSURLRequest+APLWKWebViewController.h"
 
 static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 
-@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate>
+@interface APLWKWebViewController () <UIGestureRecognizerDelegate, UINavigationControllerDelegate, UIScrollViewDelegate, MFMailComposeViewControllerDelegate>
 @property (nonatomic, readwrite, strong) WKWebView *webView;
 @property (nonatomic, readwrite, strong) UIProgressView *progressView;
 @property (nonatomic, readwrite, strong) UIBarButtonItem *backButtonItem;
@@ -431,10 +433,12 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 #pragma mark - WKNavigationDelegate and Forwardings
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
+    void (^decisionHandlerWithMailtoLinkHandling)(WKNavigationActionPolicy) = [self decisionHandlerWithMailtoHandlingForDecisionHandler:decisionHandler navigationAction:navigationAction];
+
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
-        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandler];
+        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandlerWithMailtoLinkHandling];
     } else {
-        decisionHandler(WKNavigationActionPolicyAllow);
+        decisionHandlerWithMailtoLinkHandling(WKNavigationActionPolicyAllow);
     }
 }
 
@@ -488,6 +492,53 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     } else {
         decisionHandler(WKNavigationResponsePolicyAllow);
     }
+}
+
+#pragma mark - mailto: link handling
+
+- (void(^)(WKNavigationActionPolicy))decisionHandlerWithMailtoHandlingForDecisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler navigationAction:(WKNavigationAction *)navigationAction {
+    NSURLRequest *request = navigationAction.request;
+    NSArray<NSString *> *recipients = request.aplWKWWmailRecipients;
+    BOOL canSendMail = [MFMailComposeViewController canSendMail];
+
+    if (canSendMail && request.aplWKWWisMailtoRequest && recipients.count > 0) {
+        return ^(WKNavigationActionPolicy policy){
+            if (policy != WKNavigationActionPolicyAllow) {
+                decisionHandler(policy);
+            } else {
+                [self presentMailComposeViewControllerForRecipients:recipients decisionHandler:decisionHandler];
+            }
+        };
+    } else {
+        return decisionHandler;
+    }
+}
+
+- (void)presentMailComposeViewControllerForRecipients:(NSArray<NSString *> *)recipients decisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler {
+    NSString *subjectLine = @"";
+
+    if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:subjectLineForMailtoRecipients:)]) {
+        subjectLine = [self.aplWebViewDelegate aplWebViewController:self subjectLineForMailtoRecipients:recipients];
+    }
+
+    if (!subjectLine) {
+        // The delegate vetoed the MFMailComposeViewController's presentation.
+        decisionHandler(WKNavigationActionPolicyAllow);
+        return;
+    }
+
+    MFMailComposeViewController* composeVC = [MFMailComposeViewController new];
+    composeVC.mailComposeDelegate = self;
+
+    composeVC.toRecipients = recipients;
+    composeVC.subject = subjectLine;
+
+    [self presentViewController:composeVC animated:YES completion:nil];
+    decisionHandler(WKNavigationActionPolicyCancel);
+}
+
+- (void)mailComposeController:(MFMailComposeViewController *)controller didFinishWithResult:(MFMailComposeResult)result error:(NSError *)error {
+    [self dismissViewControllerAnimated:YES completion:nil];
 }
 
 @end

@@ -126,6 +126,14 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
 - (NSArray<UIBarButtonItem*> * _Nullable)showToolbar:(APLWKWebViewController* _Nonnull)webViewController
          withSuggestedControlItems:(NSArray<UIBarButtonItem*> * _Nonnull)suggestedToolbarItems;
 
+/**
+ This delegate method is called when the user invokes a mailto: link and your `aplWebViewController:decidePolicyForNavigationAction:decisionHandler:
+ allows the navigation action. It allows you to specify a subject line for the `MFMailComposeViewController` or to veto its presentation by returning nil.
+ If the whole delegate method is unimplemented, the `MFMailComposeViewController` is presented with a blank subject.
+ @return A (possibly zero-length) subject line to prefill in the `MFMailComposeViewController`. Nil to supress presentation of the `MFMailComposeViewController`.
+ */
+- (NSString * _Nullable)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController subjectLineForMailtoRecipients:(NSArray<NSString *> * _Nonnull)recipients;
+
 @end
 
 /**

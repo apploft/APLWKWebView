@@ -167,7 +167,7 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     id<APLWKWebViewDelegate> delegate = self.aplWebViewDelegate;
     WKWebViewConfiguration *configuration;
 
-    if ([delegate respondsToSelector:@selector(aplWebViewController)]) {
+    if ([delegate respondsToSelector:@selector(aplWebViewController:)]) {
         configuration = [delegate aplWebViewController:self];
     } else {
         configuration = [WKWebViewConfiguration new];

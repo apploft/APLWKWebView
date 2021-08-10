@@ -220,7 +220,7 @@ If you do not implement this method, the load will continue in the same web view
 /// Handling policy for links that require a new window, e. g. `target=_blank` anchors.
 typedef NS_ENUM(NSInteger, APLWKWebViewTargetBlankPolicy) {
     APLWKWebViewTargetBlankPolicyOpenExternally,    /// Ask the system to handle the URL request, which probably yields the system browser.
-    APLWKWebViewTargetBlankPolicyOpenInSameWebView, /// Load the request in the current web view as if the `target=_blank` where not there.
+    APLWKWebViewTargetBlankPolicyOpenInSameWebView, /// Load the request in the current web view ignoring `target=_blank`.
 };
 
 /**

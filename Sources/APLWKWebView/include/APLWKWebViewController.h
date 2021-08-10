@@ -10,7 +10,7 @@
 @class APLWKWebViewController;
 
 /**
- `APLWKWebViewDelegate` is the `APLWKWebView`'s delegate set via its aplDelegate property.
+ `APLWKWebViewDelegate` is the `APLWKWebView`'s delegate set via its aplWebViewDelegate property.
  */
 
 @protocol APLWKWebViewDelegate <NSObject>
@@ -137,6 +137,93 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
 @end
 
 /**
+ `APLWKWebViewUIDelegate` is the `APLWKWebView`'s UI delegate set via its aplUIDelegate property. It mirrors the `WKUIDelegate`.
+ */
+
+@protocol APLWKWebViewUIDelegate <NSObject>
+
+@optional
+
+/*! @abstract Creates a new web view.
+@param webView The web view controller invoking the delegate method.
+@param configuration The configuration to use when creating the new web
+view. This configuration is a copy of webView.configuration.
+@param navigationAction The navigation action causing the new web view to
+be created.
+@param windowFeatures Window features requested by the webpage.
+@result A new web view or nil.
+@discussion The web view returned must be created with the specified configuration. WebKit will load the request in the returned web view.
+
+If you do not implement this method, the load will continue in the same web view controller.
+*/
+- (nullable WKWebView *)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures;
+
+/*! @abstract Notifies your app that the DOM window object's close() method completed successfully.
+ @param webView The web view invoking the delegate method.
+ @discussion Your app should remove the web view from the view hierarchy and update
+ the UI as needed, such as by closing the containing browser tab or window.
+ */
+- (void)aplWebViewControllerDidClose:(APLWKWebViewController * _Nonnull)webViewController API_AVAILABLE(macos(10.11), ios(9.0));
+
+/*! @abstract Displays a JavaScript alert panel.
+ @param webView The web view controller invoking the delegate method.
+ @param message The message to display.
+ @param frame Information about the frame whose JavaScript initiated this
+ call.
+ @param completionHandler The completion handler to call after the alert
+ panel has been dismissed.
+ @discussion For user security, your app should call attention to the fact
+ that a specific website controls the content in this panel. A simple forumla
+ for identifying the controlling website is frame.request.URL.host.
+ The panel should have a single OK button.
+
+ If you do not implement this method, the web view will behave as if the user selected the OK button.
+ */
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler;
+
+/*! @abstract Displays a JavaScript confirm panel.
+ @param webView The web view controller invoking the delegate method.
+ @param message The message to display.
+ @param frame Information about the frame whose JavaScript initiated this call.
+ @param completionHandler The completion handler to call after the confirm
+ panel has been dismissed. Pass YES if the user chose OK, NO if the user
+ chose Cancel.
+ @discussion For user security, your app should call attention to the fact
+ that a specific website controls the content in this panel. A simple forumla
+ for identifying the controlling website is frame.request.URL.host.
+ The panel should have two buttons, such as OK and Cancel.
+
+ If you do not implement this method, the web view will behave as if the user selected the Cancel button.
+ */
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL result))completionHandler;
+
+/*! @abstract Displays a JavaScript text input panel.
+ @param webView The web view controller invoking the delegate method.
+ @param prompt The prompt to display.
+ @param defaultText The initial text to display in the text entry field.
+ @param frame Information about the frame whose JavaScript initiated this call.
+ @param completionHandler The completion handler to call after the text
+ input panel has been dismissed. Pass the entered text if the user chose
+ OK, otherwise nil.
+ @discussion For user security, your app should call attention to the fact
+ that a specific website controls the content in this panel. A simple forumla
+ for identifying the controlling website is frame.request.URL.host.
+ The panel should have two buttons, such as OK and Cancel, and a field in
+ which to enter text.
+
+ If you do not implement this method, the web view will behave as if the user selected the Cancel button.
+ */
+- (void)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(nullable NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString * _Nullable result))completionHandler;
+
+@end
+
+/// Handling policy for links that require a new window, e. g. `target=_blank` anchors.
+typedef NS_ENUM(NSInteger, APLWKWebViewTargetBlankPolicy) {
+    APLWKWebViewTargetBlankPolicyOpenExternally,    /// Ask the system to handle the URL request, which probably yields the system browser.
+    APLWKWebViewTargetBlankPolicyOpenInSameWebView, /// Load the request in the current web view as if the `target=_blank` where not there.
+};
+
+/**
  `APLWKWebViewController` combines `WKWebView` and a convenient Safari-like navigation bottom bar.
  */
 
@@ -150,6 +237,7 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
 @property (nonatomic, readonly, strong) UIBarButtonItem * _Nonnull reloadButtonItem;
 
 @property (nonatomic, weak) id<APLWKWebViewDelegate> _Nullable aplWebViewDelegate;
+@property (nonatomic, weak) id<APLWKWebViewUIDelegate> _Nullable aplWebViewUIDelegate;
 
 /// The threshold for calling the load threshold handler registered via 'addLoadThresholdReachedHandlerForNextLoad'.
 /// The default value of this property is 0.9.
@@ -161,6 +249,11 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
 /// Use the document 'readyState' to determine when to end the loading indicator. Default value is 'NO'.
 /// see: [Document.readyState](https://developer.mozilla.org/de/docs/Web/API/Document/readyState)
 @property (nonatomic, getter=usesDOMReadyEvent) BOOL useDOMReadyEvent;
+
+/// How to handle target=_blank links. Defaults to `APLWKWebViewTargetBlankPolicyOpenExternally`.
+/// If you want to customize this behavior, implement the APLWKWebViewUIDelegate's
+/// `aplWebViewController:createWebViewWithConfiguration:forNavigationAction:windowFeatures:` method.
+@property (nonatomic) APLWKWebViewTargetBlankPolicy targetBlankPolicy;
 
 /// Just hiding the progress view when loading has completed looks artificial. Imitate Safari and
 /// fill the progress view to 100%, then wait for 'hideProgressViewDelay' seconds until the progress view is hidden.

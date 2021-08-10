@@ -494,6 +494,70 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
+
+#pragma mark - WKUIDelegate and Forwardings
+
+- (nullable WKWebView *)webView:(WKWebView *)webView createWebViewWithConfiguration:(WKWebViewConfiguration *)configuration forNavigationAction:(WKNavigationAction *)navigationAction windowFeatures:(WKWindowFeatures *)windowFeatures {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:createWebViewWithConfiguration:forNavigationAction:windowFeatures:)]) {
+        return [self.aplWebViewUIDelegate aplWebViewController:self createWebViewWithConfiguration:configuration forNavigationAction:navigationAction windowFeatures:windowFeatures];
+    }
+
+    if (!navigationAction.targetFrame.isMainFrame) {
+        NSURLRequest *request = navigationAction.request;
+        NSURL *targetURL = request.URL;
+        if (!request || !targetURL) {
+            return nil;
+        }
+
+        switch (self.targetBlankPolicy) {
+            case APLWKWebViewTargetBlankPolicyOpenExternally:
+                [[UIApplication sharedApplication] openURL:targetURL options:@{} completionHandler:nil];
+                break;
+
+            case APLWKWebViewTargetBlankPolicyOpenInSameWebView:
+                [self loadRequest:request];
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    return nil;
+}
+
+
+- (void)webViewDidClose:(WKWebView *)webView {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewControllerDidClose:)]) {
+        [self.aplWebViewUIDelegate aplWebViewControllerDidClose:self];
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptAlertPanelWithMessage:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptAlertPanelWithMessage:message initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler();
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL result))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptConfirmPanelWithMessage:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptConfirmPanelWithMessage:message initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler(NO); // == Cancel, default behavior if selector unimplemented
+    }
+}
+
+- (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(nullable NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString * _Nullable result))completionHandler {
+    if ([self.aplWebViewUIDelegate respondsToSelector:@selector(aplWebViewController:runJavaScriptTextInputPanelWithPrompt:defaultText:initiatedByFrame:completionHandler:)]) {
+        [self.aplWebViewUIDelegate aplWebViewController:self runJavaScriptTextInputPanelWithPrompt:prompt defaultText:defaultText initiatedByFrame:frame completionHandler:completionHandler];
+    } else {
+        completionHandler(nil); // == Cancel, default behavior if selector unimplemented
+    }
+}
+
+
 #pragma mark - mailto: link handling
 
 - (void(^)(WKNavigationActionPolicy))decisionHandlerWithMailtoHandlingForDecisionHandler:(void(^)(WKNavigationActionPolicy))decisionHandler navigationAction:(WKNavigationAction *)navigationAction {

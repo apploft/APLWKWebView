@@ -134,6 +134,10 @@ decidePolicyForNavigationResponse:(WKNavigationResponse * _Nonnull)navigationRes
  */
 - (NSString * _Nullable)aplWebViewController:(APLWKWebViewController * _Nonnull)webViewController subjectLineForMailtoRecipients:(NSArray<NSString *> * _Nonnull)recipients;
 
+
+/// If implemented will be called if the browser history has changed. Use the 'canGoBack' and/or 'canGoForward' methods of the 'webView' for further information.
+/// @param webViewController  the instance calling this method
+- (void)aplWebViewControllerDidChangeBrowserHistory:(APLWKWebViewController * _Nonnull)webViewController;
 @end
 
 /**

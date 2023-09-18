@@ -422,6 +422,10 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         [self updateToolbarItems];
     } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
         [self updateToolbarItems];
+        
+        if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewControllerDidChangeBrowserHistory:)]) {
+            [_aplWebViewDelegate aplWebViewControllerDidChangeBrowserHistory:self];
+        }
     }
 }
 

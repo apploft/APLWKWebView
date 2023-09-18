@@ -41,6 +41,20 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
     }
 }
 
+- (id)init {
+    return [self initWithNibName:nil bundle:nil];
+}
+
+- (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil {
+    self.mailtoLinkHandlingPolicy = APLWKWebViewMailtoLinkHandlingPolicyAutomatic;
+    return [super initWithNibName:nibNameOrNil bundle:nibBundleOrNil];
+}
+
+- (id)initWithCoder:(NSCoder *)coder {
+    self.mailtoLinkHandlingPolicy = APLWKWebViewMailtoLinkHandlingPolicyAutomatic;
+    return [super initWithCoder:coder];
+}
+
 #pragma mark - Appearance callbacks
 
 - (void)viewDidLoad {
@@ -408,6 +422,10 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
         [self updateToolbarItems];
     } else if ([keyPath isEqualToString:@"canGoBack"] || [keyPath isEqualToString:@"canGoForward"]) {
         [self updateToolbarItems];
+        
+        if ([_aplWebViewDelegate respondsToSelector:@selector(aplWebViewControllerDidChangeBrowserHistory:)]) {
+            [_aplWebViewDelegate aplWebViewControllerDidChangeBrowserHistory:self];
+        }
     }
 }
 
@@ -433,12 +451,22 @@ static void *kAPLWKWebViewKVOContext = &kAPLWKWebViewKVOContext;
 #pragma mark - WKNavigationDelegate and Forwardings
 
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler {
-    void (^decisionHandlerWithMailtoLinkHandling)(WKNavigationActionPolicy) = [self decisionHandlerWithMailtoHandlingForDecisionHandler:decisionHandler navigationAction:navigationAction];
+    void (^decisionHandlerForMailtoLinkHandlingPolicy)(WKNavigationActionPolicy);
+    
+    switch (self.mailtoLinkHandlingPolicy) {
+        case APLWKWebViewMailtoLinkHandlingPolicyCustom:
+            decisionHandlerForMailtoLinkHandlingPolicy = decisionHandler;
+            break;
+        // defaulting to 'APLWKWebViewMailtoLinkHandlingPolicyAutomatic' for compatibility sake
+        default:
+            decisionHandlerForMailtoLinkHandlingPolicy = [self decisionHandlerWithMailtoHandlingForDecisionHandler:decisionHandler navigationAction:navigationAction];
+            break;
+    }
 
     if ([self.aplWebViewDelegate respondsToSelector:@selector(aplWebViewController:decidePolicyForNavigationAction:decisionHandler:)]) {
-        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandlerWithMailtoLinkHandling];
+        [self.aplWebViewDelegate aplWebViewController:self decidePolicyForNavigationAction:navigationAction decisionHandler:decisionHandlerForMailtoLinkHandlingPolicy];
     } else {
-        decisionHandlerWithMailtoLinkHandling(WKNavigationActionPolicyAllow);
+        decisionHandlerForMailtoLinkHandlingPolicy(WKNavigationActionPolicyAllow);
     }
 }
 

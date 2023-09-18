@@ -223,6 +223,16 @@ typedef NS_ENUM(NSInteger, APLWKWebViewTargetBlankPolicy) {
     APLWKWebViewTargetBlankPolicyOpenInSameWebView, /// Load the request in the current web view ignoring `target=_blank`.
 };
 
+/// Handling policy for 'mailto:' links. 'Automatic' opens the system mail composer while 'Custom' just lets the
+/// link throught to the caller for custom handling. While 'Automatic' is convenient because nothing needs to be
+/// done manually you might want to use 'Custom' instead because 'Automatic':
+///  - only works if the user has configured the system mail client
+///  - doesn't repespect a different default mail clients than the system one
+typedef NS_ENUM(NSInteger, APLWKWebViewMailtoLinkHandlingPolicy) {
+    APLWKWebViewMailtoLinkHandlingPolicyAutomatic,
+    APLWKWebViewMailtoLinkHandlingPolicyCustom
+};
+
 /**
  `APLWKWebViewController` combines `WKWebView` and a convenient Safari-like navigation bottom bar.
  */
@@ -254,6 +264,11 @@ typedef NS_ENUM(NSInteger, APLWKWebViewTargetBlankPolicy) {
 /// If you want to customize this behavior, implement the APLWKWebViewUIDelegate's
 /// `aplWebViewController:createWebViewWithConfiguration:forNavigationAction:windowFeatures:` method.
 @property (nonatomic) APLWKWebViewTargetBlankPolicy targetBlankPolicy;
+
+/// How to handle 'mailto:' links. The default is 'APLWKWebViewMailtoLinkHandlingPolicyAutomatic'.
+/// 'APLWKWebViewMailtoLinkHandlingPolicyCustom' just lets the link pass through to 'decidePolicyForNavigationAction'
+/// for being handled by the client.
+@property (nonatomic) APLWKWebViewMailtoLinkHandlingPolicy mailtoLinkHandlingPolicy;
 
 /// Just hiding the progress view when loading has completed looks artificial. Imitate Safari and
 /// fill the progress view to 100%, then wait for 'hideProgressViewDelay' seconds until the progress view is hidden.
